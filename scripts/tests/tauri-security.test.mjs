@@ -83,7 +83,6 @@ test('external URL validator rejects lookalikes, non-HTTPS, credentials, ports, 
     'http://www.tiktok.com/@creator/video/123',
     'https://user:password@www.tiktok.com/@creator/video/123',
     'https://www.tiktok.com:8443/@creator/video/123',
-    'https://www.tiktok.com:443/@creator/video/123',
     'https://@www.tiktok.com/@creator/video/123',
     'https://www.tiktok.com./@creator/video/123',
     ' https://www.tiktok.com/@creator/video/123',
@@ -94,6 +93,10 @@ test('external URL validator rejects lookalikes, non-HTTPS, credentials, ports, 
     assert.equal(trustedExternalUrl(value), null, value);
   }
   assert.ok(trustedExternalUrl('https://www.tiktok.com/@creator/video/123'));
+  assert.equal(
+    trustedExternalUrl('https://www.tiktok.com:443/@creator/video/123'),
+    'https://www.tiktok.com/@creator/video/123',
+  );
   assert.ok(trustedExternalUrl('https://m.tiktok.com/@creator/video/123'));
   assert.ok(trustedExternalUrl('https://vt.tiktok.com/ZExample'));
   assert.ok(trustedExternalUrl('https://github.com/danielunibe/PulsarIA/blob/main/PRIVACY.es.md'));
@@ -124,7 +127,7 @@ test('the frontend TikTok validator rejects custom ports before the native URL c
   );
   assert.deepEqual(
     validateTikTokUrl('https://www.tiktok.com:443/@creator/video/123'),
-    { ok: true, normalized: 'https://www.tiktok.com:443/@creator/video/123' },
+    { ok: true, normalized: 'https://www.tiktok.com/@creator/video/123' },
   );
 });
 
@@ -148,6 +151,29 @@ test('URL length feedback describes the enforced byte limit in both locales', ()
   const translations = fs.readFileSync(new URL('../../lib/i18n.tsx', import.meta.url), 'utf8');
   assert.ok(/urlTooLong:\s*'\{count\} supera\(n\) el límite de 2\.048 bytes\.'/.test(translations));
   assert.ok(/urlTooLong:\s*'\{count\} exceed the 2,048-byte limit\.'/.test(translations));
+});
+
+test('TikTok intake normalizes default ports and rejects serialized URLs above the opener byte limit', () => {
+  const urlValidationSource = fs.readFileSync(new URL('../../lib/url-validation.ts', import.meta.url), 'utf8');
+  const compiled = ts.transpile(urlValidationSource, {
+    module: ts.ModuleKind.CommonJS,
+    target: ts.ScriptTarget.ES2022,
+  });
+  const urlValidationModule = { exports: {} };
+  new Function('exports', compiled)(urlValidationModule.exports);
+  const { validateTikTokUrl } = urlValidationModule.exports;
+  const defaultPort = validateTikTokUrl('https://www.tiktok.com:443/@creator/video/123');
+
+  assert.deepEqual(defaultPort, {
+    ok: true,
+    normalized: 'https://www.tiktok.com/@creator/video/123',
+  });
+  assert.equal(trustedExternalUrl(defaultPort.normalized), defaultPort.normalized);
+
+  const expandedUnicode = `https://www.tiktok.com/@creator/video/123?q=${'😀'.repeat(180)}`;
+  assert.ok(Buffer.byteLength(expandedUnicode, 'utf8') < 2_048);
+  assert.ok(Buffer.byteLength(new URL(expandedUnicode).href, 'utf8') > 2_048);
+  assert.deepEqual(validateTikTokUrl(expandedUnicode), { ok: false, issue: 'too_long' });
 });
 
 test('all direct local-file conversions pass through the exact-reference authorization helper', () => {

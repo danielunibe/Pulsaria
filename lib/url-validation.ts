@@ -23,5 +23,9 @@ export function validateTikTokUrl(value: string): { ok: true; normalized: string
   if (!(host === 'tiktok.com' || host.endsWith('.tiktok.com'))) {
     return { ok: false, issue: 'unsupported_platform' };
   }
-  return { ok: true, normalized: input };
+  const normalized = parsed.href;
+  if (new TextEncoder().encode(normalized).byteLength > MAX_TIKTOK_URL_LENGTH) {
+    return { ok: false, issue: 'too_long' };
+  }
+  return { ok: true, normalized };
 }
