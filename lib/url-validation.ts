@@ -5,7 +5,10 @@ export type TikTokUrlIssue = 'empty' | 'too_long' | 'malformed' | 'non_https' | 
 export function validateTikTokUrl(value: string): { ok: true; normalized: string } | { ok: false; issue: TikTokUrlIssue } {
   const input = value.trim();
   if (!input) return { ok: false, issue: 'empty' };
-  if (input.length > MAX_TIKTOK_URL_LENGTH) return { ok: false, issue: 'too_long' };
+  if (input.length > MAX_TIKTOK_URL_LENGTH
+    || new TextEncoder().encode(input).byteLength > MAX_TIKTOK_URL_LENGTH) {
+    return { ok: false, issue: 'too_long' };
+  }
 
   let parsed: URL;
   try {

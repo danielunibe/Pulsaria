@@ -119,6 +119,22 @@ test('the frontend TikTok validator rejects custom ports before the native URL c
   );
 });
 
+test('the frontend TikTok URL limit matches the native UTF-8 byte limit', () => {
+  const urlValidationSource = fs.readFileSync(new URL('../../lib/url-validation.ts', import.meta.url), 'utf8');
+  const compiled = ts.transpile(urlValidationSource, {
+    module: ts.ModuleKind.CommonJS,
+    target: ts.ScriptTarget.ES2022,
+  });
+  const urlValidationModule = { exports: {} };
+  new Function('exports', compiled)(urlValidationModule.exports);
+  const { validateTikTokUrl } = urlValidationModule.exports;
+  const input = `https://www.tiktok.com/@creator/video/123?q=${'😀'.repeat(506)}`;
+
+  assert.ok(input.length < 2_048);
+  assert.ok(Buffer.byteLength(input, 'utf8') > 2_048);
+  assert.deepEqual(validateTikTokUrl(input), { ok: false, issue: 'too_long' });
+});
+
 test('all direct local-file conversions pass through the exact-reference authorization helper', () => {
   const root = new URL('../../', import.meta.url);
   const scannedRoots = ['app', 'components', 'hooks', 'lib'];
