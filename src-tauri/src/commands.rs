@@ -841,7 +841,10 @@ fn atomic_write(path: &std::path::Path, contents: &[u8]) -> Result<(), String> {
             .unwrap_or("settings")
     ));
     if backup.exists() {
-        fs::remove_file(&backup).map_err(|error| error.to_string())?;
+        if let Err(error) = fs::remove_file(&backup) {
+            let _ = fs::remove_file(&temporary);
+            return Err(error.to_string());
+        }
     }
     fs::rename(path, &backup).map_err(|error| {
         let _ = fs::remove_file(&temporary);
@@ -1043,51 +1046,113 @@ pub fn apply_app_settings_environment(settings: &AppSettingsSnapshot) {
 }
 
 fn persist_app_settings(settings: &AppSettingsSnapshot) -> Result<(), String> {
+    persist_app_settings_at(&settings_data_dir(), settings)
+}
+
+fn persist_app_settings_at(
+    directory: &std::path::Path,
+    settings: &AppSettingsSnapshot,
+) -> Result<(), String> {
     validate_app_settings(settings)?;
-    let directory = settings_data_dir();
-    fs::create_dir_all(&directory).map_err(|error| error.to_string())?;
+    fs::create_dir_all(directory).map_err(|error| error.to_string())?;
     let serialized = serde_json::to_vec_pretty(settings).map_err(|error| error.to_string())?;
-    atomic_write(&directory.join("app-settings.json"), &serialized)?;
-    // Keep the historical projections readable by older builds and recovery
-    // tools. The canonical file is written first and remains authoritative.
-    atomic_write(
-        &directory.join("download_dir.txt"),
-        settings.download_dir.as_bytes(),
-    )?;
-    atomic_write(
-        &directory.join("retention.txt"),
-        settings.retention.as_bytes(),
-    )?;
-    atomic_write(
-        &directory.join("cookie_browser.txt"),
-        settings.cookies_browser.as_bytes(),
-    )?;
-    atomic_write(
-        &directory.join("formats.json"),
-        &serde_json::to_vec_pretty(&settings.formats).map_err(|error| error.to_string())?,
-    )?;
-    atomic_write(
-        &directory.join("search_config.json"),
-        &serde_json::to_vec_pretty(&snapshot_search_config(settings))
-            .map_err(|error| error.to_string())?,
-    )?;
-    atomic_write(
-        &directory.join("processing_settings.json"),
-        &serde_json::to_vec_pretty(&snapshot_processing_settings(settings))
-            .map_err(|error| error.to_string())?,
-    )?;
-    atomic_write(
-        &directory.join("intent.txt"),
-        settings.storage_intent.as_bytes(),
-    )?;
-    atomic_write(
-        &directory.join("quota_bytes.txt"),
-        settings.quota_bytes.to_string().as_bytes(),
-    )?;
-    atomic_write(
-        &directory.join("reserve_bytes.txt"),
-        settings.reserve_bytes.to_string().as_bytes(),
-    )?;
+    // The canonical snapshot and legacy projections describe one settings
+    // change. If a later projection fails, restore every earlier file so a
+    // failed IPC save cannot take effect on restart.
+    let files = vec![
+        ("app-settings.json".to_string(), serialized),
+        (
+            "download_dir.txt".to_string(),
+            settings.download_dir.as_bytes().to_vec(),
+        ),
+        (
+            "retention.txt".to_string(),
+            settings.retention.as_bytes().to_vec(),
+        ),
+        (
+            "cookie_browser.txt".to_string(),
+            settings.cookies_browser.as_bytes().to_vec(),
+        ),
+        (
+            "formats.json".to_string(),
+            serde_json::to_vec_pretty(&settings.formats).map_err(|error| error.to_string())?,
+        ),
+        (
+            "search_config.json".to_string(),
+            serde_json::to_vec_pretty(&snapshot_search_config(settings))
+                .map_err(|error| error.to_string())?,
+        ),
+        (
+            "processing_settings.json".to_string(),
+            serde_json::to_vec_pretty(&snapshot_processing_settings(settings))
+                .map_err(|error| error.to_string())?,
+        ),
+        (
+            "intent.txt".to_string(),
+            settings.storage_intent.as_bytes().to_vec(),
+        ),
+        (
+            "quota_bytes.txt".to_string(),
+            settings.quota_bytes.to_string().into_bytes(),
+        ),
+        (
+            "reserve_bytes.txt".to_string(),
+            settings.reserve_bytes.to_string().into_bytes(),
+        ),
+    ];
+    write_settings_files_with_rollback(directory, &files)
+}
+
+fn write_settings_files_with_rollback(
+    directory: &std::path::Path,
+    files: &[(String, Vec<u8>)],
+) -> Result<(), String> {
+    let mut previous_values = Vec::with_capacity(files.len());
+    for (name, _) in files {
+        let path = directory.join(name);
+        let previous = match fs::symlink_metadata(&path) {
+            Ok(metadata) if metadata.is_file() => {
+                Some(fs::read(&path).map_err(|error| error.to_string())?)
+            }
+            Ok(_) => {
+                return Err(format!(
+                    "settings path is not a regular file: {}",
+                    path.display()
+                ));
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => return Err(error.to_string()),
+        };
+        previous_values.push(previous);
+    }
+
+    for (index, (name, contents)) in files.iter().enumerate() {
+        if let Err(write_error) = atomic_write(&directory.join(name), contents) {
+            let mut rollback_errors = Vec::new();
+            for (rollback_index, previous) in previous_values[..index].iter().enumerate().rev() {
+                let path = directory.join(&files[rollback_index].0);
+                let rollback = match previous {
+                    Some(contents) => atomic_write(&path, contents),
+                    None => match fs::remove_file(&path) {
+                        Ok(()) => Ok(()),
+                        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+                        Err(error) => Err(error.to_string()),
+                    },
+                };
+                if let Err(error) = rollback {
+                    rollback_errors.push(format!("{}: {}", path.display(), error));
+                }
+            }
+            if rollback_errors.is_empty() {
+                return Err(write_error);
+            }
+            return Err(format!(
+                "settings write failed: {}; rollback failed: {}",
+                write_error,
+                rollback_errors.join("; ")
+            ));
+        }
+    }
     Ok(())
 }
 
@@ -1778,9 +1843,7 @@ pub async fn set_performance_policy(
     next.compute_type = effective_processing.compute_type;
     next.source = "native".into();
     validate_app_settings(&next)?;
-    persist_app_settings(&next)?;
-    apply_app_settings_environment(&next);
-    *state.app_settings.write().await = next.clone();
+    persist_and_apply_app_settings(&next, &state).await?;
     let mut status =
         acceleration::probe(&next.performance_mode, next.preferred_adapter_id.as_deref());
     merge_persisted_acceleration_verification(
@@ -1849,10 +1912,8 @@ pub async fn run_acceleration_benchmark(
         serde_json::to_string(&report)
             .map_err(|error| format!("No se pudo guardar el resultado del benchmark: {error}"))?,
     );
-    persist_app_settings(&next)?;
-    apply_app_settings_environment(&next);
+    persist_and_apply_app_settings(&next, &state).await?;
     mark_active_accelerators(&mut report.status, &next);
-    *state.app_settings.write().await = next;
     let _ = app_handle.emit("acceleration-status-changed", &report.status);
     Ok(report)
 }
@@ -1862,9 +1923,7 @@ pub async fn reset_performance_profile(state: State<'_, AppState>) -> Result<(),
     let mut next = state.app_settings.read().await.clone();
     next.last_verified_accelerators = None;
     next.performance_profile_version = next.performance_profile_version.saturating_add(1).max(1);
-    persist_app_settings(&next)?;
-    apply_app_settings_environment(&next);
-    *state.app_settings.write().await = next;
+    persist_and_apply_app_settings(&next, &state).await?;
     Ok(())
 }
 
@@ -3192,17 +3251,6 @@ pub async fn set_processing_settings(
     state: State<'_, AppState>,
 ) -> Result<ProcessingSettings, String> {
     let settings = effective_processing_settings(derive_processing_settings(quality, video_fit)?)?;
-    apply_processing_environment(&settings);
-    let serialized = serde_json::to_string_pretty(&settings).map_err(|error| error.to_string())?;
-    fs::create_dir_all(settings_data_dir()).map_err(|error| error.to_string())?;
-    fs::write(
-        settings_data_dir().join("processing_settings.json"),
-        serialized.as_bytes(),
-    )
-    .map_err(|error| error.to_string())?;
-    let mut config = state.worker_config.write().await;
-    config.processing = settings.clone();
-    drop(config);
     let mut app_settings = state.app_settings.read().await.clone();
     app_settings.processing_quality = settings.quality;
     app_settings.processing_profile = settings.profile.clone();
@@ -3211,8 +3259,7 @@ pub async fn set_processing_settings(
     app_settings.compute_type = settings.compute_type.clone();
     app_settings.video_fit = settings.video_fit.clone();
     app_settings.source = "native".into();
-    persist_app_settings(&app_settings)?;
-    *state.app_settings.write().await = app_settings;
+    persist_and_apply_app_settings(&app_settings, &state).await?;
     Ok(settings)
 }
 
@@ -3305,98 +3352,6 @@ pub async fn save_mvp_settings(
         chunk_size: 150,
         chunk_overlap: 50,
     };
-    let directory = settings_data_dir();
-    fs::create_dir_all(&directory).map_err(|error| error.to_string())?;
-    let writes = vec![
-        (
-            directory.join("download_dir.txt"),
-            download_dir.to_string_lossy().as_bytes().to_vec(),
-        ),
-        (
-            directory.join("retention.txt"),
-            input.retention.as_bytes().to_vec(),
-        ),
-        (
-            directory.join("cookie_browser.txt"),
-            input.browser.as_bytes().to_vec(),
-        ),
-        (
-            directory.join("formats.json"),
-            serde_json::to_vec_pretty(&input.formats).map_err(|error| error.to_string())?,
-        ),
-        (
-            directory.join("search_config.json"),
-            serde_json::to_vec_pretty(&search).map_err(|error| error.to_string())?,
-        ),
-        (
-            directory.join("processing_settings.json"),
-            serde_json::to_vec_pretty(&processing).map_err(|error| error.to_string())?,
-        ),
-        (
-            directory.join("intent.txt"),
-            intent.as_str().as_bytes().to_vec(),
-        ),
-        (
-            directory.join("quota_bytes.txt"),
-            quota_bytes.to_string().into_bytes(),
-        ),
-        (
-            directory.join("reserve_bytes.txt"),
-            reserve_bytes.to_string().into_bytes(),
-        ),
-    ];
-    let previous: Vec<(PathBuf, Option<Vec<u8>>)> = writes
-        .iter()
-        .map(|(path, _)| (path.clone(), fs::read(path).ok()))
-        .collect();
-    for (path, content) in &writes {
-        if let Err(error) = fs::write(path, content) {
-            for (restore_path, restore_content) in &previous {
-                if let Some(bytes) = restore_content {
-                    let _ = fs::write(restore_path, bytes);
-                } else {
-                    let _ = fs::remove_file(restore_path);
-                }
-            }
-            return Err(format!("No se pudo guardar {}: {}", path.display(), error));
-        }
-    }
-
-    std::env::set_var("PULSAR_DOWNLOAD_DIR", &download_dir);
-    std::env::set_var("PULSAR_DEFAULT_RETENTION", &input.retention);
-    std::env::set_var("PULSAR_SETUP_INTENT", intent.as_str());
-    std::env::set_var("PULSAR_MEDIA_QUOTA_BYTES", quota_bytes.to_string());
-    std::env::set_var("PULSAR_MEDIA_RESERVE_BYTES", reserve_bytes.to_string());
-    std::env::set_var(
-        "PULSAR_FORMATS",
-        serde_json::to_string(&input.formats).map_err(|error| error.to_string())?,
-    );
-    if input.browser.is_empty() {
-        std::env::remove_var("PULSAR_COOKIES_FROM_BROWSER");
-    } else {
-        std::env::set_var("PULSAR_COOKIES_FROM_BROWSER", &input.browser);
-    }
-    apply_processing_environment(&processing);
-    let runtime_search = crate::domain::models::SearchConfig {
-        min_score: search.min_score,
-        max_results: search.max_results,
-        similarity_metric: search.similarity_metric.clone(),
-        chunk_size: search.chunk_size,
-        chunk_overlap: search.chunk_overlap,
-    };
-    *state.config.lock().await = search.clone();
-    state.search.update_config(runtime_search)?;
-    let mut worker = state.worker_config.write().await;
-    worker.download_dir = download_dir.to_string_lossy().to_string();
-    worker.retention = input.retention.clone();
-    worker.cookies_browser = input.browser.clone();
-    worker.formats = input.formats.clone();
-    worker.processing = processing.clone();
-    worker.intent = intent.as_str().to_string();
-    worker.quota_bytes = quota_bytes;
-    worker.reserve_bytes = reserve_bytes;
-    drop(worker);
-
     let mut app_settings = state.app_settings.read().await.clone();
     app_settings.source = "native".into();
     app_settings.download_dir = download_dir.to_string_lossy().to_string();
@@ -3417,8 +3372,7 @@ pub async fn save_mvp_settings(
     app_settings.storage_intent = intent.as_str().to_string();
     app_settings.quota_bytes = quota_bytes;
     app_settings.reserve_bytes = reserve_bytes;
-    persist_app_settings(&app_settings)?;
-    *state.app_settings.write().await = app_settings;
+    persist_and_apply_app_settings(&app_settings, &state).await?;
     Ok(processing)
 }
 
@@ -4223,6 +4177,35 @@ async fn apply_runtime_settings(
     Ok(())
 }
 
+async fn persist_and_apply_app_settings(
+    settings: &AppSettingsSnapshot,
+    state: &State<'_, AppState>,
+) -> Result<(), String> {
+    let previous = state.app_settings.read().await.clone();
+    persist_app_settings(settings)?;
+
+    if let Err(apply_error) = apply_runtime_settings(settings, state).await {
+        let mut rollback_errors = Vec::new();
+        if let Err(error) = persist_app_settings(&previous) {
+            rollback_errors.push(format!("persisted settings: {error}"));
+        }
+        if let Err(error) = apply_runtime_settings(&previous, state).await {
+            rollback_errors.push(format!("runtime settings: {error}"));
+        }
+        if rollback_errors.is_empty() {
+            return Err(apply_error);
+        }
+        return Err(format!(
+            "settings apply failed: {}; rollback incomplete: {}",
+            apply_error,
+            rollback_errors.join("; ")
+        ));
+    }
+
+    *state.app_settings.write().await = settings.clone();
+    Ok(())
+}
+
 fn default_legal_consent() -> LegalConsent {
     LegalConsent {
         eula_version: CURRENT_EULA_VERSION.into(),
@@ -4462,9 +4445,7 @@ pub async fn save_app_settings(
     settings.device = processing.device.clone();
     settings.compute_type = processing.compute_type.clone();
     settings.video_fit = processing.video_fit.clone();
-    persist_app_settings(&settings)?;
-    apply_runtime_settings(&settings, &state).await?;
-    *state.app_settings.write().await = settings.clone();
+    persist_and_apply_app_settings(&settings, &state).await?;
     Ok(settings)
 }
 
@@ -4754,36 +4735,13 @@ pub async fn update_search_config(
     {
         return Err("Invalid search configuration values".to_string());
     }
-    let mut config = state.config.lock().await;
-    config.min_score = min_score;
-    config.max_results = max_results;
-    config.chunk_size = chunk_size;
-    config.chunk_overlap = chunk_overlap;
-    let runtime_config = crate::domain::models::SearchConfig {
-        min_score: config.min_score,
-        max_results: config.max_results,
-        similarity_metric: config.similarity_metric.clone(),
-        chunk_size: config.chunk_size,
-        chunk_overlap: config.chunk_overlap,
-    };
-    let settings_dir = settings_data_dir();
-    fs::create_dir_all(&settings_dir).map_err(|error| error.to_string())?;
-    let serialized = serde_json::to_string_pretty(&*config).map_err(|error| error.to_string())?;
-    fs::write(
-        settings_dir.join("search_config.json"),
-        serialized.as_bytes(),
-    )
-    .map_err(|error| error.to_string())?;
-    drop(config);
-    state.search.update_config(runtime_config)?;
     let mut app_settings = state.app_settings.read().await.clone();
     app_settings.source = "native".into();
     app_settings.min_score = min_score;
     app_settings.max_results = max_results;
     app_settings.chunk_size = chunk_size;
     app_settings.chunk_overlap = chunk_overlap;
-    persist_app_settings(&app_settings)?;
-    *state.app_settings.write().await = app_settings;
+    persist_and_apply_app_settings(&app_settings, &state).await?;
     emit_log(&app_handle, "Search configuration updated".into());
     Ok(())
 }
@@ -5505,23 +5463,10 @@ pub async fn set_download_dir(path: String, state: State<'_, AppState>) -> Resul
     fs::create_dir_all(&path).map_err(|error| error.to_string())?;
     storage::ensure_media_root(&path)
         .map_err(|error| format!("No se pudo preparar el almacenamiento local: {}", error))?;
-    std::env::set_var("PULSAR_DOWNLOAD_DIR", &path);
-    {
-        let mut wc = state.worker_config.write().await;
-        wc.download_dir = path.to_string_lossy().to_string();
-    }
-    let settings_dir = settings_data_dir();
-    fs::create_dir_all(&settings_dir).map_err(|error| error.to_string())?;
-    fs::write(
-        settings_dir.join("download_dir.txt"),
-        path.to_string_lossy().as_bytes(),
-    )
-    .map_err(|error| error.to_string())?;
     let mut app_settings = state.app_settings.read().await.clone();
     app_settings.download_dir = path.to_string_lossy().to_string();
     app_settings.source = "native".into();
-    persist_app_settings(&app_settings)?;
-    *state.app_settings.write().await = app_settings;
+    persist_and_apply_app_settings(&app_settings, &state).await?;
     Ok(())
 }
 
@@ -5602,24 +5547,10 @@ pub async fn set_cookie_browser(browser: String, state: State<'_, AppState>) -> 
     if !matches!(browser.as_str(), "" | "chrome" | "edge" | "firefox") {
         return Err("Unsupported cookie browser".to_string());
     }
-    {
-        let mut wc = state.worker_config.write().await;
-        wc.cookies_browser = browser.clone();
-    }
-    if browser.is_empty() {
-        std::env::remove_var("PULSAR_COOKIES_FROM_BROWSER");
-    } else {
-        std::env::set_var("PULSAR_COOKIES_FROM_BROWSER", &browser);
-    }
-    let settings_dir = settings_data_dir();
-    fs::create_dir_all(&settings_dir).map_err(|error| error.to_string())?;
-    fs::write(settings_dir.join("cookie_browser.txt"), browser.as_bytes())
-        .map_err(|error| error.to_string())?;
     let mut app_settings = state.app_settings.read().await.clone();
     app_settings.cookies_browser = browser;
     app_settings.source = "native".into();
-    persist_app_settings(&app_settings)?;
-    *state.app_settings.write().await = app_settings;
+    persist_and_apply_app_settings(&app_settings, &state).await?;
     Ok(())
 }
 
@@ -5632,21 +5563,10 @@ pub async fn set_formats(formats: Vec<String>, state: State<'_, AppState>) -> Re
     if !valid_formats(&formats) {
         return Err("La selección de formatos es inválida".into());
     }
-    {
-        let mut wc = state.worker_config.write().await;
-        wc.formats = formats.clone();
-    }
-    let serialized = serde_json::to_string(&formats).map_err(|error| error.to_string())?;
-    std::env::set_var("PULSAR_FORMATS", &serialized);
-    let settings_dir = settings_data_dir();
-    fs::create_dir_all(&settings_dir).map_err(|error| error.to_string())?;
-    fs::write(settings_dir.join("formats.json"), serialized.as_bytes())
-        .map_err(|error| error.to_string())?;
     let mut app_settings = state.app_settings.read().await.clone();
     app_settings.formats = formats;
     app_settings.source = "native".into();
-    persist_app_settings(&app_settings)?;
-    *state.app_settings.write().await = app_settings;
+    persist_and_apply_app_settings(&app_settings, &state).await?;
     Ok(())
 }
 
@@ -5664,20 +5584,10 @@ pub async fn set_default_retention(
     if !matches!(retention.as_str(), "keep" | "online") {
         return Err("Retention policy must be 'keep' or 'online'".to_string());
     }
-    {
-        let mut wc = state.worker_config.write().await;
-        wc.retention = retention.clone();
-    }
-    std::env::set_var("PULSAR_DEFAULT_RETENTION", &retention);
-    let settings_dir = settings_data_dir();
-    fs::create_dir_all(&settings_dir).map_err(|error| error.to_string())?;
-    fs::write(settings_dir.join("retention.txt"), retention.as_bytes())
-        .map_err(|error| error.to_string())?;
     let mut app_settings = state.app_settings.read().await.clone();
     app_settings.retention = retention;
     app_settings.source = "native".into();
-    persist_app_settings(&app_settings)?;
-    *state.app_settings.write().await = app_settings;
+    persist_and_apply_app_settings(&app_settings, &state).await?;
     Ok(())
 }
 
@@ -6621,9 +6531,10 @@ pub async fn get_model_capability_profiles(
 mod unib_tests {
     use super::{
         apply_checkpoint_transition, atomic_write, classify_local_model_error,
-        content_rights_consent_is_current, default_content_rights_consent, default_legal_consent,
-        legal_consent_is_current, parse_unib_segments, parse_unib_time,
-        processing_consent_is_current, unib_header_value, LocalModelErrorCode,
+        content_rights_consent_is_current, default_app_settings, default_content_rights_consent,
+        default_legal_consent, legal_consent_is_current, parse_unib_segments, parse_unib_time,
+        persist_app_settings_at, processing_consent_is_current, unib_header_value,
+        LocalModelErrorCode,
     };
     use std::fs;
     use std::path::PathBuf;
@@ -6751,6 +6662,58 @@ mod unib_tests {
         );
         assert!(!root.join(".app-settings.json.previous").exists());
         fs::remove_dir_all(root).expect("test directory should be removable");
+    }
+
+    #[test]
+    fn failed_settings_projection_restores_the_canonical_snapshot_and_prior_projections() {
+        let root = std::env::temp_dir().join(format!(
+            "pulsaria-settings-rollback-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("system clock before unix epoch")
+                .as_nanos()
+        ));
+        fs::create_dir_all(&root).expect("test settings directory should be created");
+
+        let mut previous = default_app_settings();
+        previous.download_dir = root.join("media").to_string_lossy().to_string();
+        persist_app_settings_at(&root, &previous).expect("initial settings should be persisted");
+
+        let previous_files = [
+            "app-settings.json",
+            "download_dir.txt",
+            "retention.txt",
+            "cookie_browser.txt",
+            "formats.json",
+        ]
+        .into_iter()
+        .map(|name| {
+            (
+                name,
+                fs::read(root.join(name)).expect("initial settings file should be readable"),
+            )
+        })
+        .collect::<Vec<_>>();
+
+        let mut next = previous.clone();
+        next.cookies_browser = "chrome".into();
+        next.retention = "online".into();
+        fs::create_dir(root.join(".formats.json.previous"))
+            .expect("fixture should block replacement of the formats projection");
+
+        let error = persist_app_settings_at(&root, &next)
+            .expect_err("blocked projection should fail the settings save");
+        assert!(!error.is_empty());
+
+        for (name, contents) in previous_files {
+            assert_eq!(
+                fs::read(root.join(name)).expect("settings file should remain readable"),
+                contents,
+                "{name} should return to its prior value after a failed save"
+            );
+        }
+        fs::remove_dir_all(root).expect("test settings directory should be removable");
     }
 
     #[test]
