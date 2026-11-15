@@ -2,6 +2,8 @@
 
 use url::Url;
 
+const MAX_EXTERNAL_URL_BYTES: usize = 2048;
+
 const TIKTOK_HOSTS: [&str; 5] = [
     "tiktok.com",
     "www.tiktok.com",
@@ -23,7 +25,7 @@ const LEGAL_GITHUB_PATHS: [&str; 9] = [
 ];
 
 pub fn validate_external_url(value: &str) -> Result<Url, &'static str> {
-    if value.trim() != value || value.len() > 2048 {
+    if value.trim() != value || value.len() > MAX_EXTERNAL_URL_BYTES {
         return Err("El enlace externo no es válido.");
     }
     let authority = value
@@ -34,6 +36,9 @@ pub fn validate_external_url(value: &str) -> Result<Url, &'static str> {
         return Err("El enlace externo no está autorizado.");
     }
     let url = Url::parse(value).map_err(|_| "El enlace externo no es válido.")?;
+    if url.as_str().len() > MAX_EXTERNAL_URL_BYTES {
+        return Err("El enlace externo no es válido.");
+    }
     if url.scheme() != "https"
         || !url.username().is_empty()
         || url.password().is_some()
@@ -57,7 +62,7 @@ pub fn validate_external_url(value: &str) -> Result<Url, &'static str> {
 
 #[cfg(test)]
 mod tests {
-    use super::validate_external_url;
+    use super::{validate_external_url, Url};
 
     #[test]
     fn allows_official_tiktok_and_known_legal_documents() {
@@ -94,5 +99,18 @@ mod tests {
         ] {
             assert!(validate_external_url(value).is_err(), "{value}");
         }
+    }
+
+    #[test]
+    fn rejects_urls_whose_serialized_form_exceeds_the_native_byte_limit() {
+        let value = format!(
+            "https://www.tiktok.com/@creator/video/123?q={}",
+            "😀".repeat(180)
+        );
+        let serialized = Url::parse(&value).unwrap();
+
+        assert!(value.len() < 2048);
+        assert!(serialized.as_str().len() > 2048);
+        assert!(validate_external_url(&value).is_err());
     }
 }
