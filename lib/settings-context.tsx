@@ -23,7 +23,7 @@ export type AppTheme = 'carbon' | 'chromatic' | 'aurora' | 'oled' | 'cyberpunk' 
  * Política de retención de archivos de video procesados.
  * 
  * - `keep`: Conservar archivos locales (video, audio, transcripción)
- * - `online`: Eliminar archivos locales tras procesar, conservar solo la ficha
+ * - `online`: Marcar videos terminados para revisión; pasan a papelera solo tras confirmar la purga
  */
 export type RetentionPolicy = 'keep' | 'online';
 export type ProcessingQuality = 'fast' | 'balanced' | 'high';
