@@ -1,8 +1,29 @@
 # Pulsaria Beta 4 — evidencia de Gate P1-04
 
-Fecha de corte: 2026-11-01
+Fecha de corte: 2026-11-15
 Estado: **PARTIAL — permanece en DOING**
 PR: [#3, borrador y abierto](https://github.com/danielunibe/PulsarIA/pull/3)
+
+## Revalidación del candidato actual — 2026-11-15
+
+Al crear el candidato, el PR #3 y `codex/pulsaria-beta4-prep` estaban en el SHA
+exacto `3295202cff999ae666818d94ac49280a682d8d66`. La CI canonical exacta pasó
+en [run 43700310688](https://github.com/danielunibe/Pulsaria/actions/runs/43700310688).
+El dispatch manual del runtime/NSIS sobre ese mismo SHA pasó en
+[run 43701997112](https://github.com/danielunibe/Pulsaria/actions/runs/43701997112).
+
+El instalador probado reportó SHA-256
+`C8462BE7F361E04B6DF5FA4EB1FE975AF2BE95CDE7AAB28A1E0CC6B1D36390D8`. El
+artifact retenido es `pulsaria-p1-04-acceptance-43701997112-1` (586,874,950
+bytes; ZIP digest `sha256:325c6435b842423bc9ecb87727e648e11ba27065cc4396c7f9085e7fa4da0a75`;
+expira `2026-12-15T10:42:14Z`). El smoke aislado de Actions confirmó recursos
+pinned/hash, build NSIS, instalación y verificación del bundle, health/API,
+restart, cleanup y retención. La ejecución no usó `-RunLive` ni datos reales.
+
+Este es el candidato vigente para la sesión conjunta; no sustituye aceptación
+humana en Windows limpio, desconexión física de unidad, navegador externo
+visible, revisión de accesibilidad/idiomas ni TikTok live autorizado. P1-04
+continúa PARTIAL/DOING.
 
 ## Dependencias y alcance
 

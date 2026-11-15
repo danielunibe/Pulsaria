@@ -6,6 +6,27 @@ actual, las pruebas reproducidas y esta definición de verdad.
 
 ## Gate P1-04 — seguridad Tauri, CSP y recursos locales — 2026-11-01
 
+### Revalidación del candidato de aceptación — 2026-11-15
+
+En el dispatch del 15-NOV, PR #3 y `codex/pulsaria-beta4-prep` estaban en el
+SHA exacto `3295202cff999ae666818d94ac49280a682d8d66`. La CI canonical pasó
+para ese SHA en [run 43700310688](https://github.com/danielunibe/Pulsaria/actions/runs/43700310688);
+el runtime/NSIS dispatch exacto pasó en
+[run 43701997112](https://github.com/danielunibe/Pulsaria/actions/runs/43701997112).
+
+El NSIS x64 probado reportó SHA-256
+`C8462BE7F361E04B6DF5FA4EB1FE975AF2BE95CDE7AAB28A1E0CC6B1D36390D8`. El
+artifact retenido es `pulsaria-p1-04-acceptance-43701997112-1` (586,874,950
+bytes; ZIP digest `sha256:325c6435b842423bc9ecb87727e648e11ba27065cc4396c7f9085e7fa4da0a75`;
+expira `2026-12-15T10:42:14Z`). El runner aislado terminó PASS en instalación,
+verificación del bundle, health/API, restart, cleanup y retención. No se usó
+`-RunLive`, URL TikTok ni datos personales.
+
+El resultado acredita este smoke automatizado del instalador, no aceptación
+humana en Windows limpio. P1-04 sigue **PARTIAL / DOING** y QA-05 sigue
+**DOING / sin aceptación live**; quedan pendientes la unidad física, la UI y
+accesibilidad humana, el navegador externo visible y el contenido autorizado.
+
 P1-04 queda **PARTIAL / DOING**. El WebView inicia con `assetProtocol.scope`
 vacío; cada archivo renderizable exige referencia exacta persistida y
 validación de ruta antes de `allow_file`. Se quitaron el plugin shell y

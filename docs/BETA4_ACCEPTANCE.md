@@ -25,13 +25,16 @@ Registrar en la evidencia privada de aceptación:
 
 | Dato | Valor |
 | --- | --- |
-| Archivo `.exe` y tamaño | `Pulsaria_0.1.0-beta.4_x64-setup.exe`, dentro del artifact ZIP `pulsaria-p1-04-acceptance-41344562943-1` (586,707,269 bytes; tamaño del `.exe` aún pendiente de extraer) |
-| SHA-256 del `.exe` | `EC096B4876BCD0989E6C6DBCE81DE8A5C31C69C1EC5C3AD171A56C21A43DC15B` |
-| Tag / commit | Sin tag / `6196f63e882d5bbb3e760cda99c9807780f9640c` |
-| Workflow run / artifact ID | [run 41344562943](https://github.com/danielunibe/PulsarIA/actions/runs/41344562943) / `13100120194` |
+| Archivo `.exe` y tamaño | `Pulsaria_0.1.0-beta.4_x64-setup.exe`, dentro del artifact ZIP `pulsaria-p1-04-acceptance-43701997112-1` (586,874,950 bytes; tamaño del `.exe` aún pendiente de extraer) |
+| SHA-256 del `.exe` | `C8462BE7F361E04B6DF5FA4EB1FE975AF2BE95CDE7AAB28A1E0CC6B1D36390D8` |
+| Tag / source commit del artefacto | Sin tag / `3295202cff999ae666818d94ac49280a682d8d66` |
+| CI canonical / runtime y artifact | [canonical 43700310688 PASS](https://github.com/danielunibe/Pulsaria/actions/runs/43700310688); [runtime dispatch 43701997112 PASS](https://github.com/danielunibe/Pulsaria/actions/runs/43701997112); artifact ID `14158477078` |
+| Digest del ZIP / expiración | `sha256:325c6435b842423bc9ecb87727e648e11ba27065cc4396c7f9085e7fa4da0a75`; expira `2026-12-15T10:42:14Z` |
 | Windows x64 / WebView2 | Smoke instalado aislado PASS en runner de Actions; aceptación final en Windows limpio pendiente |
-| Fecha / operador | 2026-11-01 / runner de GitHub Actions; aceptación por operador humano pendiente |
+| Fecha / operador | 2026-11-15 / runner de GitHub Actions; aceptación por operador humano pendiente |
 
+El candidato de 1-NOV se conserva como antecedente histórico; para la
+aceptación conjunta se debe usar exclusivamente el candidato vigente de esta tabla.
 La aprobación humana se aplica únicamente al hash registrado. Cualquier
 reconstrucción o cambio de archivo invalida la aceptación.
 
