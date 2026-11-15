@@ -25,22 +25,23 @@ Registrar en la evidencia privada de aceptación:
 
 | Dato | Valor |
 | --- | --- |
-| Archivo `.exe` y tamaño | `Pulsaria_0.1.0-beta.4_x64-setup.exe`; artifact de Actions `pulsaria-p1-04-acceptance-43710866209-1`, `586,816,281` bytes según `size_in_bytes` (el tamaño individual del `.exe` no aparece por separado en los logs) |
-| SHA-256 del `.exe` | `5661D9EE49B401806D2C3165CA8BDCE96D347A8991EF2ACA50D3E076FEBC0C77` |
-| Tag / source commit del artefacto | Sin tag / `2fad9a2fa28211f8f0b326b816f761fcb782edc3` |
-| CI canonical / runtime y artifact | [canonical 43710350808 PASS](https://github.com/danielunibe/Pulsaria/actions/runs/43710350808); [runtime PR 43710350795 PASS](https://github.com/danielunibe/Pulsaria/actions/runs/43710350795) con retención SKIPPED por evento PR; dispatch exacto [43710866209 PASS](https://github.com/danielunibe/Pulsaria/actions/runs/43710866209), incluido smoke instalado y retención |
-| Digest del ZIP / expiración | `sha256:880f880e3f68db578b3a8f56594897cdd18ad7560842af039b7d3d9044f5d2b8` / `2026-12-15T12:29:30Z` |
-| Windows x64 / WebView2 | Smoke NSIS instalado en runner aislado PASS: `installExit: 0`, runtime 54/54 archivos presentes, sin bloqueadores; aceptación final en Windows limpio pendiente |
+| Archivo `.exe` y tamaño | `Pulsaria_0.1.0-beta.4_x64-setup.exe`; artifact de Actions `pulsaria-p1-04-acceptance-43728523365-1`, `586,893,220` bytes según `size_in_bytes` (ID `14168787560`; el tamaño individual del `.exe` no aparece por separado en los logs) |
+| SHA-256 del `.exe` | `2E5C374CA6D1377B131935726652588203F5323E4F9E7B997587D69A5A35242D` |
+| Tag / source commit del artefacto | Sin tag / `5b0b12b8adc05745f1b606efeb1f88eade6ba97a` |
+| CI canonical / runtime y artifact | [canonical 43728413982 PASS](https://github.com/danielunibe/Pulsaria/actions/runs/43728413982); [runtime PR 43728413978 PASS](https://github.com/danielunibe/Pulsaria/actions/runs/43728413978); dispatch exacto [43728523365 PASS](https://github.com/danielunibe/Pulsaria/actions/runs/43728523365), incluido smoke instalado y retención |
+| Digest del ZIP / expiración | `sha256:780c50752014f5cc0777b700281fd8d603a8489e6ec5f91fbb5d9fddb5d261f8` / `2026-12-15T15:50:03Z` |
+| Windows x64 / WebView2 | Smoke NSIS instalado en runner aislado PASS; runtime 54/54 archivos presentes, sin bloqueadores; aceptación final en Windows limpio pendiente |
 | Fecha / operador | 2026-11-15 / runner de GitHub Actions; aceptación por operador humano pendiente |
 
-El artifact retenido del run [43710866209](https://github.com/danielunibe/Pulsaria/actions/runs/43710866209)
+El artifact retenido del run [43728523365](https://github.com/danielunibe/Pulsaria/actions/runs/43728523365)
 corresponde al commit exacto registrado arriba. La aceptación humana queda
 pendiente y debe aplicarse únicamente a ese hash. Cualquier reconstrucción o
 cambio de archivo invalida la aceptación.
 
-El candidato de SHA `3295202cff999ae666818d94ac49280a682d8d66`, validado en el run
-43701997112, queda como antecedente histórico porque no incluye el cambio de
-worker en `2fad9a2` y no debe usarse para aceptar el candidato actual.
+El candidato previo de SHA `2fad9a2fa28211f8f0b326b816f761fcb782edc3`, validado
+en el run 43710866209, quedó superseded por el candidato actual. El más antiguo
+`3295202cff999ae666818d94ac49280a682d8d66`, validado en el run 43701997112,
+también es histórico y no debe usarse para aceptar el candidato actual.
 
 ## Entorno de prueba y privacidad
 

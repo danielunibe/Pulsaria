@@ -6,7 +6,43 @@ actual, las pruebas reproducidas y esta definición de verdad.
 
 ## Gate P1-04 — seguridad Tauri, CSP y recursos locales — 2026-11-01
 
-### Candidato actual — código `2fad9a2` en validación — 2026-11-15
+### Candidato actual — código `5b0b12b8` en validación — 2026-11-15
+
+El candidato publicado en `codex/pulsaria-beta4-prep` es el SHA exacto
+`5b0b12b8adc05745f1b606efeb1f88eade6ba97a`. La CI canonical terminó PASS en
+[run 43728413982](https://github.com/danielunibe/Pulsaria/actions/runs/43728413982)
+y el runtime PR terminó PASS en
+[run 43728413978](https://github.com/danielunibe/Pulsaria/actions/runs/43728413978).
+El dispatch manual con retención
+[43728523365](https://github.com/danielunibe/Pulsaria/actions/runs/43728523365)
+también terminó PASS para el mismo SHA. El instalador NSIS x64
+`Pulsaria_0.1.0-beta.4_x64-setup.exe` reportó SHA-256
+`2E5C374CA6D1377B131935726652588203F5323E4F9E7B997587D69A5A35242D`. El
+smoke instalado aislado pasó. Artifact `pulsaria-p1-04-acceptance-43728523365-1`
+(ID `14168787560`, 586,893,220 bytes, digest
+`sha256:780c50752014f5cc0777b700281fd8d603a8489e6ec5f91fbb5d9fddb5d261f8`,
+expira `2026-12-15T15:50:03Z`) contiene el instalador exacto y evidencia de
+retención. El tamaño individual del `.exe` no aparece separado en Actions.
+
+El cambio focal de este SHA alinea la validación de URL de TikTok con el opener:
+la entrada se devuelve como `URL.href` canónico, se limita su tamaño UTF-8 ya
+serializado y se permite que el parser elimine el puerto HTTPS predeterminado
+`:443`; los puertos no predeterminados siguen rechazados. La suite focal de
+seguridad pasó 12/12; `npm run typecheck`, `npm run lint` y `npm run build`
+pasaron. No se ejecutó `npm run verify:mvp` porque incluye pruebas de runtime
+con modelos locales no autorizadas para esta tarea. No se instaló ni lanzó la
+app localmente.
+
+P1-04 sigue **PARTIAL / DOING**; QA-05 sigue **DOING / sin aceptación live**.
+El resultado automatizado no sustituye aceptación humana en Windows limpio,
+revisión de accesibilidad/UI, prueba de volumen físico, navegador externo
+visible ni TikTok live autorizado.
+
+Rollback focal: `git revert 5b0b12b`. Siguiente acción: aceptación humana del
+artifact exacto en Windows limpio y completar los criterios live autorizados de
+QA-05 en entorno aislado.
+
+### Candidato anterior — código `2fad9a2` — histórico — 2026-11-15
 
 El cambio de código publicado en `codex/pulsaria-beta4-prep` y sometido a los
 runs exactos es `2fad9a2fa28211f8f0b326b816f761fcb782edc3`. La CI canonical exacta terminó PASS
@@ -238,9 +274,21 @@ SKIPPED por ser `pull_request`. El dispatch con retención exacta `43710866209`
 sobre este SHA terminó PASS y retuvo el NSIS
 `5661D9EE49B401806D2C3165CA8BDCE96D347A8991EF2ACA50D3E076FEBC0C77`; el
 artifact y digest están registrados arriba. No se usó URL live ni dato personal.
-Rollback de código: `git revert 2fad9a2` si aparece una regresión. Siguiente
-acción: realizar la aceptación humana del artifact exacto en Windows limpio; QA
-live permanece pendiente de contenido autorizado y entorno aislado.
+
+El cambio worker de este checkpoint está incluido en el candidato posterior
+`5b0b12b8adc05745f1b606efeb1f88eade6ba97a`. La canonical exacta
+[43728413982](https://github.com/danielunibe/Pulsaria/actions/runs/43728413982),
+el runtime PR exacto
+[43728413978](https://github.com/danielunibe/Pulsaria/actions/runs/43728413978)
+y el dispatch con artifact exacto
+[43728523365](https://github.com/danielunibe/Pulsaria/actions/runs/43728523365)
+terminaron PASS sobre ese SHA; metadata e instalador están arriba. QA-05 sigue
+**DOING / sin aceptación live**: todavía faltan dataset/contenido autorizado y
+ensayo instalado de transcripción inteligible, búsqueda, seek, reinicio y
+negativos. No se usó URL live ni dato personal. Rollback del fix worker:
+`git revert 2fad9a2`; la validación URL del candidato actual se revierte por
+separado con `git revert 5b0b12b`. Siguiente acción: ejecutar la matriz live
+autorizada en entorno aislado y registrar la aceptación del artifact exacto.
 
 ## Gate P1-03 — consistencia de descubrimiento de perfiles — 2026-10-29
 

@@ -4,7 +4,47 @@ Fecha de corte: 2026-11-15
 Estado: **PARTIAL — permanece en DOING**
 PR: [#3, borrador y abierto](https://github.com/danielunibe/PulsarIA/pull/3)
 
-## Candidato actual — código `2fad9a2` — 2026-11-15
+## Candidato actual — código `5b0b12b8` — 2026-11-15
+
+El SHA exacto publicado en `codex/pulsaria-beta4-prep` es
+`5b0b12b8adc05745f1b606efeb1f88eade6ba97a`. La CI canonical terminó PASS en
+[run 43728413982](https://github.com/danielunibe/Pulsaria/actions/runs/43728413982)
+y el runtime PR terminó PASS en
+[run 43728413978](https://github.com/danielunibe/Pulsaria/actions/runs/43728413978).
+El dispatch manual con retención
+[43728523365](https://github.com/danielunibe/Pulsaria/actions/runs/43728523365)
+también terminó PASS sobre el mismo SHA. El smoke NSIS instalado en runner
+aislado pasó. El instalador `Pulsaria_0.1.0-beta.4_x64-setup.exe` reportó
+SHA-256 `2E5C374CA6D1377B131935726652588203F5323E4F9E7B997587D69A5A35242D`.
+
+Artifact retenido `pulsaria-p1-04-acceptance-43728523365-1` (ID
+`14168787560`): 586,893,220 bytes según Actions, digest
+`sha256:780c50752014f5cc0777b700281fd8d603a8489e6ec5f91fbb5d9fddb5d261f8`,
+expira `2026-12-15T15:50:03Z`. El tamaño individual del `.exe` no aparece por
+separado. El workflow reportó runtime instalado 54/54 archivos y completó
+health/API, reinicio, cleanup y retención.
+
+El cambio focal corrige el desacuerdo entre la validación frontend y el opener:
+`validateTikTokUrl` aceptaba HTTPS `:443` pero el opener rechazaba esa autoridad;
+la URL ahora se devuelve como `URL.href` canónico. Una URL de consulta Unicode
+midió 764 bytes UTF-8 de entrada y 2,204 bytes al serializarse, por lo que el
+límite de 2,048 bytes ahora se aplica después de la serialización. Los puertos
+no predeterminados siguen rechazados; el contrato IPC nativo continúa estricto.
+Regresiones focales de canonicalización, compatibilidad con opener y tamaño
+serializado: 12/12 PASS. `npm run typecheck`, `npm run lint` y `npm run build`
+pasaron. No se ejecutó `npm run verify:mvp`, porque esa ruta incluye pruebas de
+runtime con modelos locales no autorizadas para esta tarea.
+
+P1-04 permanece **PARTIAL / DOING**. La aceptación humana en Windows limpio y
+la revisión instalada de UI/accesibilidad, volumen físico, navegador externo
+visible y TikTok live autorizado siguen pendientes. No se instaló ni lanzó la
+app localmente.
+
+Rollback focal: `git revert 5b0b12b`. Siguiente acción: aceptación humana del
+artifact exacto en Windows limpio y completar QA live con contenido autorizado
+en entorno aislado.
+
+## Candidato anterior — código `2fad9a2` — histórico — 2026-11-15
 
 El cambio de código publicado en `codex/pulsaria-beta4-prep` y sometido a los
 runs exactos es `2fad9a2fa28211f8f0b326b816f761fcb782edc3`. La canonical exacta pasó en
