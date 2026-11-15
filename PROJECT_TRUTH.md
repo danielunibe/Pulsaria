@@ -6,7 +6,27 @@ actual, las pruebas reproducidas y esta definición de verdad.
 
 ## Gate P1-04 — seguridad Tauri, CSP y recursos locales — 2026-11-01
 
-### Revalidación del candidato de aceptación — 2026-11-15
+### Candidato actual — código `2fad9a2` en validación — 2026-11-15
+
+El cambio de código publicado en `codex/pulsaria-beta4-prep` y sometido a los
+runs exactos es `2fad9a2fa28211f8f0b326b816f761fcb782edc3`. La CI canonical exacta terminó PASS
+([run 43710350808](https://github.com/danielunibe/Pulsaria/actions/runs/43710350808)).
+El runtime preflight del PR ([run 43710350795](https://github.com/danielunibe/Pulsaria/actions/runs/43710350795))
+terminó PASS, incluido el smoke aislado NSIS; el paso de retención se omitió por
+ser un evento `pull_request`. El dispatch manual con retención
+([run 43710866209](https://github.com/danielunibe/Pulsaria/actions/runs/43710866209))
+terminó PASS sobre el mismo SHA. El NSIS x64 exacto
+`Pulsaria_0.1.0-beta.4_x64-setup.exe` reportó SHA-256
+`5661D9EE49B401806D2C3165CA8BDCE96D347A8991EF2ACA50D3E076FEBC0C77`. El smoke
+instalado aislado pasó: `installExit: 0`, manifiesto de runtime 54/54 archivos,
+sin bloqueadores, y health/API, reinicio y cleanup concluidos. El artifact
+retenido `pulsaria-p1-04-acceptance-43710866209-1` (Actions `size_in_bytes`:
+586,816,281; digest `sha256:880f880e3f68db578b3a8f56594897cdd18ad7560842af039b7d3d9044f5d2b8`;
+expira `2026-12-15T12:29:30Z`) contiene el instalador y su manifiesto. Ese tamaño
+es el reportado para el artifact de Actions; los logs no separan el tamaño del
+`.exe`. La aceptación humana en Windows limpio sigue pendiente.
+
+### Artefacto anterior — código `3295202` — 2026-11-15
 
 En el dispatch del 15-NOV, PR #3 y `codex/pulsaria-beta4-prep` estaban en el
 SHA exacto `3295202cff999ae666818d94ac49280a682d8d66`. La CI canonical pasó
@@ -22,7 +42,8 @@ expira `2026-12-15T10:42:14Z`). El runner aislado terminó PASS en instalación,
 verificación del bundle, health/API, restart, cleanup y retención. No se usó
 `-RunLive`, URL TikTok ni datos personales.
 
-El resultado acredita este smoke automatizado del instalador, no aceptación
+El artefacto está ligado al SHA anterior `3295202`; no es candidato para aceptar
+el código `2fad9a2`. Su resultado acredita ese smoke automatizado, no aceptación
 humana en Windows limpio. P1-04 sigue **PARTIAL / DOING** y QA-05 sigue
 **DOING / sin aceptación live**; quedan pendientes la unidad física, la UI y
 accesibilidad humana, el navegador externo visible y el contenido autorizado.
@@ -187,14 +208,39 @@ El smoke instalado reportó SHA-256
 El dispatch conservó `pulsaria-p1-04-acceptance-41344562943-1`
 (586,707,269 bytes), asociado al SHA exacto `6196f63e`.
 
-P1-04 permanece **PARTIAL / DOING** y QA-05 **DOING / sin aceptación**. El
-instalador de `d71d2750` queda superseded; el candidato exacto nuevo pasó el
-smoke aislado y está retenido para la sesión conjunta con Windows limpio,
-unidad física, navegador externo, accesibilidad y live TikTok autorizado. Los
+En el checkpoint del código `6196f63e`, P1-04 permanecía **PARTIAL / DOING** y
+QA-05 **DOING / sin aceptación**. El instalador de `d71d2750` quedó superseded
+por el candidato exacto de `6196f63e`, que pasó el smoke aislado. Ese candidato
+también es histórico respecto de `2fad9a2`. Siguen pendientes la sesión conjunta
+con Windows limpio, unidad física, navegador externo, accesibilidad y live
+TikTok autorizado. Los
 cuatro criterios de aceptación real de QA-05 siguen incompletos mientras falte
 el dataset propio/autorizado y el ensayo instalado con transcripción
 inteligible, búsqueda, seek, reinicio y negativos. No se usaron medios ni
 cuentas reales para esta revisión.
+
+### QA-05 — preservar Retry-After del worker HTTP 429 — 2026-11-15
+
+QueueService ya clasificaba y persistía `RATE_LIMITED` y entendía `Retry-After`
+en segundos o fecha HTTP, pero el CLI de yt-dlp eliminaba el header antes de
+devolver el error al worker. La reproducción local con un servidor HTTP sintético
+429 + `Retry-After: 3` mostró que `extract_metadata()` entregaba el error sin el
+header, por lo que QueueService usaba su default de 60 segundos. En
+`2fad9a2fa28211f8f0b326b816f761fcb782edc3`, el worker retiene ese header solo
+para errores 429, con validación contra valores vacíos, largos o con CR/LF. La
+prueba localhost comprueba el camino real del worker; otra regresión confirma que
+el JSON de metadata exitoso conserva su contrato. La suite Python offline ejecutó
+42 pruebas: 41 PASS y 1 skip por ausencia de URL TikTok live; `git diff --check` pasó.
+
+La CI canonical exacta terminó PASS en el run `43710350808`. El runtime exacto
+`43710350795` terminó PASS con smoke NSIS instalado/aislado; su retención quedó
+SKIPPED por ser `pull_request`. El dispatch con retención exacta `43710866209`
+sobre este SHA terminó PASS y retuvo el NSIS
+`5661D9EE49B401806D2C3165CA8BDCE96D347A8991EF2ACA50D3E076FEBC0C77`; el
+artifact y digest están registrados arriba. No se usó URL live ni dato personal.
+Rollback de código: `git revert 2fad9a2` si aparece una regresión. Siguiente
+acción: realizar la aceptación humana del artifact exacto en Windows limpio; QA
+live permanece pendiente de contenido autorizado y entorno aislado.
 
 ## Gate P1-03 — consistencia de descubrimiento de perfiles — 2026-10-29
 

@@ -25,18 +25,22 @@ Registrar en la evidencia privada de aceptación:
 
 | Dato | Valor |
 | --- | --- |
-| Archivo `.exe` y tamaño | `Pulsaria_0.1.0-beta.4_x64-setup.exe`, dentro del artifact ZIP `pulsaria-p1-04-acceptance-43701997112-1` (586,874,950 bytes; tamaño del `.exe` aún pendiente de extraer) |
-| SHA-256 del `.exe` | `C8462BE7F361E04B6DF5FA4EB1FE975AF2BE95CDE7AAB28A1E0CC6B1D36390D8` |
-| Tag / source commit del artefacto | Sin tag / `3295202cff999ae666818d94ac49280a682d8d66` |
-| CI canonical / runtime y artifact | [canonical 43700310688 PASS](https://github.com/danielunibe/Pulsaria/actions/runs/43700310688); [runtime dispatch 43701997112 PASS](https://github.com/danielunibe/Pulsaria/actions/runs/43701997112); artifact ID `14158477078` |
-| Digest del ZIP / expiración | `sha256:325c6435b842423bc9ecb87727e648e11ba27065cc4396c7f9085e7fa4da0a75`; expira `2026-12-15T10:42:14Z` |
-| Windows x64 / WebView2 | Smoke instalado aislado PASS en runner de Actions; aceptación final en Windows limpio pendiente |
+| Archivo `.exe` y tamaño | `Pulsaria_0.1.0-beta.4_x64-setup.exe`; artifact de Actions `pulsaria-p1-04-acceptance-43710866209-1`, `586,816,281` bytes según `size_in_bytes` (el tamaño individual del `.exe` no aparece por separado en los logs) |
+| SHA-256 del `.exe` | `5661D9EE49B401806D2C3165CA8BDCE96D347A8991EF2ACA50D3E076FEBC0C77` |
+| Tag / source commit del artefacto | Sin tag / `2fad9a2fa28211f8f0b326b816f761fcb782edc3` |
+| CI canonical / runtime y artifact | [canonical 43710350808 PASS](https://github.com/danielunibe/Pulsaria/actions/runs/43710350808); [runtime PR 43710350795 PASS](https://github.com/danielunibe/Pulsaria/actions/runs/43710350795) con retención SKIPPED por evento PR; dispatch exacto [43710866209 PASS](https://github.com/danielunibe/Pulsaria/actions/runs/43710866209), incluido smoke instalado y retención |
+| Digest del ZIP / expiración | `sha256:880f880e3f68db578b3a8f56594897cdd18ad7560842af039b7d3d9044f5d2b8` / `2026-12-15T12:29:30Z` |
+| Windows x64 / WebView2 | Smoke NSIS instalado en runner aislado PASS: `installExit: 0`, runtime 54/54 archivos presentes, sin bloqueadores; aceptación final en Windows limpio pendiente |
 | Fecha / operador | 2026-11-15 / runner de GitHub Actions; aceptación por operador humano pendiente |
 
-El candidato de 1-NOV se conserva como antecedente histórico; para la
-aceptación conjunta se debe usar exclusivamente el candidato vigente de esta tabla.
-La aprobación humana se aplica únicamente al hash registrado. Cualquier
-reconstrucción o cambio de archivo invalida la aceptación.
+El artifact retenido del run [43710866209](https://github.com/danielunibe/Pulsaria/actions/runs/43710866209)
+corresponde al commit exacto registrado arriba. La aceptación humana queda
+pendiente y debe aplicarse únicamente a ese hash. Cualquier reconstrucción o
+cambio de archivo invalida la aceptación.
+
+El candidato de SHA `3295202cff999ae666818d94ac49280a682d8d66`, validado en el run
+43701997112, queda como antecedente histórico porque no incluye el cambio de
+worker en `2fad9a2` y no debe usarse para aceptar el candidato actual.
 
 ## Entorno de prueba y privacidad
 

@@ -4,7 +4,30 @@ Fecha de corte: 2026-11-15
 Estado: **PARTIAL — permanece en DOING**
 PR: [#3, borrador y abierto](https://github.com/danielunibe/PulsarIA/pull/3)
 
-## Revalidación del candidato actual — 2026-11-15
+## Candidato actual — código `2fad9a2` — 2026-11-15
+
+El cambio de código publicado en `codex/pulsaria-beta4-prep` y sometido a los
+runs exactos es `2fad9a2fa28211f8f0b326b816f761fcb782edc3`. La canonical exacta pasó en
+[run 43710350808](https://github.com/danielunibe/Pulsaria/actions/runs/43710350808).
+El runtime preflight del PR [43710350795](https://github.com/danielunibe/Pulsaria/actions/runs/43710350795)
+terminó PASS e incluyó el smoke NSIS aislado exacto; su paso de retención quedó
+SKIPPED por ser evento `pull_request`. El dispatch manual con retención
+[43710866209](https://github.com/danielunibe/Pulsaria/actions/runs/43710866209)
+terminó PASS sobre el mismo SHA. El NSIS x64 `Pulsaria_0.1.0-beta.4_x64-setup.exe`
+reportó SHA-256 `5661D9EE49B401806D2C3165CA8BDCE96D347A8991EF2ACA50D3E076FEBC0C77`.
+El smoke instalado pasó con `installExit: 0`; el gate del runtime instalado
+verificó 54/54 archivos, sin bloqueadores, y el job completó health/API,
+reinicio, cleanup y el chequeo de aislamiento antes de subir el artifact.
+
+Artifact retenido `pulsaria-p1-04-acceptance-43710866209-1`: `586,816,281`
+bytes según GitHub Actions, digest `sha256:880f880e3f68db578b3a8f56594897cdd18ad7560842af039b7d3d9044f5d2b8`,
+expira `2026-12-15T12:29:30Z`. El tamaño individual del `.exe` no se informó por
+separado. El artifact contiene el instalador exacto y el manifiesto del run.
+
+P1-04 permanece PARTIAL/DOING. La aceptación humana en Windows limpio sigue
+pendiente, independientemente del resultado automatizado del runner.
+
+## Candidato anterior — código `3295202` — histórico
 
 Al crear el candidato, el PR #3 y `codex/pulsaria-beta4-prep` estaban en el SHA
 exacto `3295202cff999ae666818d94ac49280a682d8d66`. La CI canonical exacta pasó
@@ -20,10 +43,11 @@ expira `2026-12-15T10:42:14Z`). El smoke aislado de Actions confirmó recursos
 pinned/hash, build NSIS, instalación y verificación del bundle, health/API,
 restart, cleanup y retención. La ejecución no usó `-RunLive` ni datos reales.
 
-Este es el candidato vigente para la sesión conjunta; no sustituye aceptación
-humana en Windows limpio, desconexión física de unidad, navegador externo
-visible, revisión de accesibilidad/idiomas ni TikTok live autorizado. P1-04
-continúa PARTIAL/DOING.
+Este fue candidato para la sesión conjunta antes del cambio de worker `2fad9a2`,
+pero ahora es histórico y no debe usarse para aceptar el código actual. No
+sustituía aceptación humana en Windows limpio, desconexión física de unidad,
+navegador externo visible, revisión de accesibilidad/idiomas ni TikTok live
+autorizado. P1-04 continúa PARTIAL/DOING.
 
 ## Dependencias y alcance
 
