@@ -85,14 +85,34 @@ impl QueueAdmissionGate {
             }
             break permit;
         };
-        work.await;
+        let completed = tokio::select! {
+            biased;
+            _ = self.wait_for_authorization_change(authorization_epoch) => false,
+            _ = work => true,
+        };
         drop(permit);
+        if !completed {
+            // The receiver persists the job as paused and releases its queue
+            // bookkeeping when this work future is dropped.
+            return false;
+        }
         // The profile cooldown leaves ordinary workers available for foreground jobs.
         if profile_permit.is_some() {
             tokio::time::sleep(self.profile_cooldown).await;
         }
         drop(profile_permit);
         true
+    }
+
+    async fn wait_for_authorization_change(&self, expected_epoch: u64) {
+        loop {
+            if !self.processing_authorized.load(Ordering::SeqCst)
+                || self.processing_authorization_epoch.load(Ordering::SeqCst) != expected_epoch
+            {
+                return;
+            }
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
     }
 }
 
@@ -2155,6 +2175,58 @@ mod tests {
             .unwrap();
         assert!(!started);
         assert!(!processed.load(Ordering::SeqCst));
+    }
+
+    #[tokio::test]
+    async fn revoking_consent_cancels_work_already_running() {
+        use super::QueueAdmissionGate;
+        use std::sync::{
+            atomic::{AtomicBool, AtomicU64, Ordering},
+            Arc,
+        };
+        use tokio::sync::{oneshot, Semaphore};
+        use tokio::time::{timeout, Duration};
+
+        let authorized = Arc::new(AtomicBool::new(true));
+        let epoch = Arc::new(AtomicU64::new(9));
+        let completed = Arc::new(AtomicBool::new(false));
+        let gate = QueueAdmissionGate {
+            workers: Arc::new(Semaphore::new(1)),
+            profiles: Arc::new(Semaphore::new(1)),
+            processing_paused: Arc::new(AtomicBool::new(false)),
+            background_paused: Arc::new(AtomicBool::new(false)),
+            processing_authorized: authorized.clone(),
+            processing_authorization_epoch: epoch.clone(),
+            profile_cooldown: Duration::ZERO,
+        };
+
+        let (started_tx, started_rx) = oneshot::channel();
+        let completed_work = completed.clone();
+        let task = tokio::spawn(async move {
+            gate.run(false, 9, async move {
+                started_tx
+                    .send(())
+                    .expect("test should observe when work starts");
+                tokio::time::sleep(Duration::from_secs(5)).await;
+                completed_work.store(true, Ordering::SeqCst);
+            })
+            .await
+        });
+
+        started_rx
+            .await
+            .expect("work should start before consent is revoked");
+        authorized.store(false, Ordering::SeqCst);
+        epoch.fetch_add(1, Ordering::SeqCst);
+        // Reacceptance must not revive work admitted under the old epoch.
+        authorized.store(true, Ordering::SeqCst);
+
+        let started = timeout(Duration::from_secs(1), task)
+            .await
+            .expect("revocation should cancel already-running work")
+            .expect("queue task should finish cleanly");
+        assert!(!started);
+        assert!(!completed.load(Ordering::SeqCst));
     }
 
     #[test]
