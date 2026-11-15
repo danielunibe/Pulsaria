@@ -99,6 +99,15 @@ test('external URL validator rejects lookalikes, non-HTTPS, credentials, ports, 
   assert.ok(trustedExternalUrl('https://github.com/danielunibe/PulsarIA/blob/main/PRIVACY.es.md'));
 });
 
+test('the external URL allowlist enforces the native byte limit after URL serialization', () => {
+  const value = `https://www.tiktok.com/@creator/video/123?q=${'😀'.repeat(180)}`;
+  const normalized = new URL(value).href;
+
+  assert.ok(value.length < 2_048);
+  assert.ok(Buffer.byteLength(normalized, 'utf8') > 2_048);
+  assert.ok(trustedExternalUrl(value) === null, 'serialized URL above native byte limit must be rejected');
+});
+
 test('the frontend TikTok validator rejects custom ports before the native URL contract', () => {
   const urlValidationSource = fs.readFileSync(new URL('../../lib/url-validation.ts', import.meta.url), 'utf8');
   const compiled = ts.transpile(urlValidationSource, {
@@ -133,6 +142,12 @@ test('the frontend TikTok URL limit matches the native UTF-8 byte limit', () => 
   assert.ok(input.length < 2_048);
   assert.ok(Buffer.byteLength(input, 'utf8') > 2_048);
   assert.deepEqual(validateTikTokUrl(input), { ok: false, issue: 'too_long' });
+});
+
+test('URL length feedback describes the enforced byte limit in both locales', () => {
+  const translations = fs.readFileSync(new URL('../../lib/i18n.tsx', import.meta.url), 'utf8');
+  assert.ok(/urlTooLong:\s*'\{count\} supera\(n\) el límite de 2\.048 bytes\.'/.test(translations));
+  assert.ok(/urlTooLong:\s*'\{count\} exceed the 2,048-byte limit\.'/.test(translations));
 });
 
 test('all direct local-file conversions pass through the exact-reference authorization helper', () => {
