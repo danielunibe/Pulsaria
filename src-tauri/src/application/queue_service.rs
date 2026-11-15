@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
+use std::process::Stdio;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex as StdMutex};
 
@@ -278,7 +279,20 @@ where
         return Err(policy_changed_message.to_string());
     }
     command.kill_on_drop(true);
-    let output_future = command.output();
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+    let mut child = command.spawn().map_err(|error| error.to_string())?;
+    let _process_tree_guard =
+        match crate::process_control::ProcessTreeGuard::attach_to_tokio_child(&child) {
+            Ok(guard) => guard,
+            Err(error) => {
+                let _ = child.start_kill();
+                let _ = child.wait().await;
+                return Err(format!(
+                    "Could not establish a cancellable scan process tree: {error}"
+                ));
+            }
+        };
+    let output_future = child.wait_with_output();
     tokio::pin!(output_future);
     let output = tokio::time::timeout(timeout, async {
         loop {
