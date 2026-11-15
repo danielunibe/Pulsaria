@@ -552,6 +552,14 @@ fn normalize_worker_progress(step: &str, progress: i32) -> (&'static str, i32) {
     (status, progress)
 }
 
+fn completed_job_keep_status(job: &JobMessage) -> &'static str {
+    if job.retention == "online" {
+        "online"
+    } else {
+        "keep"
+    }
+}
+
 fn claim_job_once(active_jobs: &mut HashSet<i64>, job_id: i64) -> bool {
     active_jobs.insert(job_id)
 }
@@ -1878,8 +1886,7 @@ impl QueueService {
                             error
                         )))
                     } else {
-                        let retention = std::env::var("PULSAR_DEFAULT_RETENTION")
-                            .unwrap_or_else(|_| "keep".to_string());
+                        let retention = completed_job_keep_status(job);
                         let connection =
                             repo.get_connection().map_err(QueueError::ProcessingError)?;
                         let connection = connection.lock().map_err(|_| {
@@ -1927,9 +1934,10 @@ impl QueueService {
 #[cfg(test)]
 mod tests {
     use super::{
-        classify_pipeline_error, normalize_worker_progress, retry_delay_seconds,
-        rewrite_visual_artifact_paths, worker_count_for,
+        classify_pipeline_error, completed_job_keep_status, normalize_worker_progress,
+        retry_delay_seconds, rewrite_visual_artifact_paths, worker_count_for,
     };
+    use crate::domain::models::JobMessage;
     use serde_json::json;
     use std::path::PathBuf;
 
@@ -1940,6 +1948,34 @@ mod tests {
             normalize_worker_progress("completed", 100),
             ("indexing", 99)
         );
+    }
+
+    #[test]
+    fn completion_retention_uses_the_admitted_snapshot_after_default_changes() {
+        let job = JobMessage {
+            job_id: 1,
+            url: "https://example.invalid/video/1".into(),
+            attempt: 0,
+            authorization_epoch: 0,
+            cookies_browser: None,
+            formats: "[\"mp4\"]".into(),
+            download_dir: String::new(),
+            retention: "keep".into(),
+            processing_quality: "78".into(),
+            whisper_model: "tiny".into(),
+            whisper_device: "cpu".into(),
+            whisper_compute_type: "int8".into(),
+            profile_background: false,
+        };
+
+        let current_default = "online";
+        assert_ne!(job.retention, current_default);
+        assert_eq!(completed_job_keep_status(&job), "keep");
+        let online_job = JobMessage {
+            retention: "online".into(),
+            ..job
+        };
+        assert_eq!(completed_job_keep_status(&online_job), "online");
     }
 
     #[test]
