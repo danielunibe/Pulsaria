@@ -15,6 +15,7 @@ export function validateTikTokUrl(value: string): { ok: true; normalized: string
   }
   if (parsed.protocol !== 'https:') return { ok: false, issue: 'non_https' };
   if (parsed.username || parsed.password) return { ok: false, issue: 'malformed' };
+  if (parsed.port) return { ok: false, issue: 'malformed' };
   const host = parsed.hostname.toLowerCase();
   if (!(host === 'tiktok.com' || host.endsWith('.tiktok.com'))) {
     return { ok: false, issue: 'unsupported_platform' };

@@ -99,6 +99,26 @@ test('external URL validator rejects lookalikes, non-HTTPS, credentials, ports, 
   assert.ok(trustedExternalUrl('https://github.com/danielunibe/PulsarIA/blob/main/PRIVACY.es.md'));
 });
 
+test('the frontend TikTok validator rejects custom ports before the native URL contract', () => {
+  const urlValidationSource = fs.readFileSync(new URL('../../lib/url-validation.ts', import.meta.url), 'utf8');
+  const compiled = ts.transpile(urlValidationSource, {
+    module: ts.ModuleKind.CommonJS,
+    target: ts.ScriptTarget.ES2022,
+  });
+  const urlValidationModule = { exports: {} };
+  new Function('exports', compiled)(urlValidationModule.exports);
+  const { validateTikTokUrl } = urlValidationModule.exports;
+
+  assert.deepEqual(
+    validateTikTokUrl('https://www.tiktok.com:8443/@creator/video/123'),
+    { ok: false, issue: 'malformed' },
+  );
+  assert.deepEqual(
+    validateTikTokUrl('https://www.tiktok.com:443/@creator/video/123'),
+    { ok: true, normalized: 'https://www.tiktok.com:443/@creator/video/123' },
+  );
+});
+
 test('all direct local-file conversions pass through the exact-reference authorization helper', () => {
   const root = new URL('../../', import.meta.url);
   const scannedRoots = ['app', 'components', 'hooks', 'lib'];
