@@ -6,8 +6,10 @@ PR: [#3, borrador y abierto](https://github.com/danielunibe/PulsarIA/pull/3)
 
 ## Candidato actual — código `e38731ee` — 2026-11-15
 
-El HEAD exacto de `codex/pulsaria-beta4-prep` es
-`e38731eef28551c55c86aae84560d87c27952be9`. La CI canonical terminó PASS en
+El artifact y las verificaciones de código se generaron para el SHA exacto
+`e38731eef28551c55c86aae84560d87c27952be9`. La rama tiene después el commit
+documental `2139d4fcca8696b938075a5695e4ca218c63d9bb`, que actualiza estas
+evidencias y no cambia el binario. La CI canonical terminó PASS en
 [run 43747260931](https://github.com/danielunibe/Pulsaria/actions/runs/43747260931)
 y el runtime PR terminó PASS en
 [run 43747260920](https://github.com/danielunibe/Pulsaria/actions/runs/43747260920).
@@ -20,9 +22,10 @@ El artifact retenido es
 `pulsaria-p1-04-acceptance-43751089553-1` (ID `14177740443`,
 `586,813,528` bytes, digest
 `sha256:778185be93e1173aed9c54f0cea1a000246a9a3cba5c40c1b842321ae7df3739`).
-El run público identifica el artifact exacto, pero no publica el SHA-256 del
-`.exe` por separado; calcularlo desde el ejecutable extraído durante la
-aceptación humana. No reutilizar el hash del candidato anterior.
+El resumen del run y los metadatos públicos consultados identifican el artifact
+exacto, pero no muestran el SHA-256 del `.exe` por separado; calcularlo desde
+el ejecutable extraído durante la aceptación humana o comprobar los logs con
+acceso autenticado. No reutilizar el hash del candidato anterior.
 
 Este smoke automatizado no sustituye la aceptación visual en Windows limpio,
 la prueba con una unidad física, el recorrido live de TikTok autorizado ni la
