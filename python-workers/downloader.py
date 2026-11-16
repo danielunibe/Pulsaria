@@ -80,6 +80,90 @@ def _process_error_detail(error: subprocess.CalledProcessError) -> str:
     return stderr or stdout or str(error)
 
 
+def _retry_after_from_exception(error: BaseException | None) -> str | None:
+    pending = [error] if isinstance(error, BaseException) else []
+    visited = set()
+
+    while pending:
+        current = pending.pop()
+        if id(current) in visited:
+            continue
+        visited.add(id(current))
+
+        response = getattr(current, "response", None)
+        status = getattr(current, "status", None) or getattr(response, "status", None)
+        if status is None:
+            status = getattr(current, "code", None)
+        headers = getattr(response, "headers", None) or getattr(current, "headers", None)
+        if status == 429 and headers is not None:
+            retry_after = headers.get("Retry-After")
+            if retry_after is None and hasattr(headers, "items"):
+                retry_after = next(
+                    (
+                        value
+                        for name, value in headers.items()
+                        if str(name).lower() == "retry-after"
+                    ),
+                    None,
+                )
+            if retry_after is not None:
+                value = (
+                    retry_after.decode("ascii", "ignore")
+                    if isinstance(retry_after, bytes)
+                    else str(retry_after)
+                ).strip()
+                if (
+                    value
+                    and len(value) <= 64
+                    and "\r" not in value
+                    and "\n" not in value
+                ):
+                    return value
+
+        exc_info = getattr(current, "exc_info", None)
+        if isinstance(exc_info, tuple) and len(exc_info) > 1:
+            nested = exc_info[1]
+            if isinstance(nested, BaseException):
+                pending.append(nested)
+        for attribute in ("cause", "__cause__", "__context__"):
+            nested = getattr(current, attribute, None)
+            if isinstance(nested, BaseException):
+                pending.append(nested)
+
+    return None
+
+
+def _append_retry_after(message: str, error: BaseException | None) -> str:
+    retry_after = _retry_after_from_exception(error)
+    if retry_after:
+        return f"{message}\nRetry-After: {retry_after}"
+    return message
+
+
+def _run_yt_dlp_cli(arguments: list[str]) -> int:
+    """Run yt-dlp with the CLI options and retain Retry-After on HTTP 429."""
+    import yt_dlp
+
+    class RetryAfterYoutubeDL(yt_dlp.YoutubeDL):
+        def trouble(self, message=None, tb=None, is_error=True):
+            if is_error and message is not None:
+                # The CLI error text drops response headers needed by queue backoff.
+                message = _append_retry_after(str(message), sys.exc_info()[1])
+            return super().trouble(message, tb, is_error)
+
+    original_youtube_dl = yt_dlp.YoutubeDL
+    yt_dlp.YoutubeDL = RetryAfterYoutubeDL
+    try:
+        return int(yt_dlp.main(arguments) or 0)
+    except SystemExit as error:
+        if isinstance(error.code, int) or error.code is None:
+            return int(error.code or 0)
+        print(error.code, file=sys.stderr, flush=True)
+        return 1
+    finally:
+        yt_dlp.YoutubeDL = original_youtube_dl
+
+
 def resolve_yt_dlp_path() -> str:
     """
     Resuelve la ruta del ejecutable yt-dlp probando múltiples ubicaciones.
@@ -117,13 +201,12 @@ def build_yt_dlp_base_cmd() -> list:
     """
     Construye el prefijo de comando para invocar yt-dlp de la forma más robusta.
 
-    Invoca siempre el módulo con el intérprete que ejecuta el worker. Así el
-    runtime aprobado controla también la versión de yt-dlp y no se recurre a
-    un ejecutable externo ni a PATH.
+    Invoca el módulo del runtime aprobado mediante este archivo, que conserva
+    Retry-After en errores HTTP 429 sin cambiar los flags de CLI.
 
     Devuelve una lista de tokens lista para anteponer a los argumentos.
     """
-    command = [sys.executable, "-m", "yt_dlp"]
+    command = [sys.executable, str(Path(__file__).resolve())]
 
     # La sesión autenticada es opt-in y nunca se persiste en SQLite ni en la UI.
     # Ejemplo en Windows: PULSAR_COOKIES_FROM_BROWSER=chrome
@@ -356,18 +439,19 @@ def extract_playlist_entries(url: str, playlist_end: int = 200) -> list[dict]:
         "--quiet",
         "--no-warnings",
         "--flat-playlist",
-        "--playlist-end", str(max(1, min(1000, playlist_end))),
         "--dump-json",
         "--no-download",
-        url
     ]
+    if playlist_end != 0:
+        cmd += ["--playlist-end", str(max(1, min(1000, playlist_end)))]
+    cmd.append(url)
     try:
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
             check=True,
-            timeout=60,
+            timeout=300 if playlist_end == 0 else 60,
             **hidden_process_kwargs(),
         )
         entries = []
@@ -393,6 +477,7 @@ def extract_playlist_entries(url: str, playlist_end: int = 200) -> list[dict]:
                         "id": str(info.get("id") or "") or None,
                         "upload_date": str(info.get("upload_date") or "") or None,
                         "timestamp": info.get("timestamp"),
+                        "title": info.get("title") or info.get("description"),
                     })
 
         return entries
@@ -407,3 +492,7 @@ def extract_playlist_entries(url: str, playlist_end: int = 200) -> list[dict]:
 def extract_playlist_videos(url: str) -> list[str]:
     """Extrae URLs individuales de una playlist de TikTok."""
     return [entry["url"] for entry in extract_playlist_entries(url)]
+
+
+if __name__ == "__main__":
+    raise SystemExit(_run_yt_dlp_cli(sys.argv[1:]))

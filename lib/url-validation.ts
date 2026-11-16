@@ -5,7 +5,10 @@ export type TikTokUrlIssue = 'empty' | 'too_long' | 'malformed' | 'non_https' | 
 export function validateTikTokUrl(value: string): { ok: true; normalized: string } | { ok: false; issue: TikTokUrlIssue } {
   const input = value.trim();
   if (!input) return { ok: false, issue: 'empty' };
-  if (input.length > MAX_TIKTOK_URL_LENGTH) return { ok: false, issue: 'too_long' };
+  if (input.length > MAX_TIKTOK_URL_LENGTH
+    || new TextEncoder().encode(input).byteLength > MAX_TIKTOK_URL_LENGTH) {
+    return { ok: false, issue: 'too_long' };
+  }
 
   let parsed: URL;
   try {
@@ -15,9 +18,14 @@ export function validateTikTokUrl(value: string): { ok: true; normalized: string
   }
   if (parsed.protocol !== 'https:') return { ok: false, issue: 'non_https' };
   if (parsed.username || parsed.password) return { ok: false, issue: 'malformed' };
+  if (parsed.port) return { ok: false, issue: 'malformed' };
   const host = parsed.hostname.toLowerCase();
   if (!(host === 'tiktok.com' || host.endsWith('.tiktok.com'))) {
     return { ok: false, issue: 'unsupported_platform' };
   }
-  return { ok: true, normalized: input };
+  const normalized = parsed.href;
+  if (new TextEncoder().encode(normalized).byteLength > MAX_TIKTOK_URL_LENGTH) {
+    return { ok: false, issue: 'too_long' };
+  }
+  return { ok: true, normalized };
 }

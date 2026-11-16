@@ -32,3 +32,14 @@ test('Tauri export preparation preserves Next currentScript invariants and rewri
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('online-only retention copy describes the explicit reversible purge flow in both locales', () => {
+  const translations = fs.readFileSync(new URL('../../lib/i18n.tsx', import.meta.url), 'utf8');
+  const descriptions = [...translations.matchAll(/stOnlineOnlyDesc:\s*'((?:[^'\\]|\\.)*)'/g)]
+    .map((match) => match[1]);
+
+  assert.deepEqual(descriptions, [
+    'Conserva notas y transcripciones; los videos pasan a papelera solo tras revisión y confirmación.',
+    'Keeps notes and transcripts; videos move to trash only after review and confirmation.',
+  ]);
+});

@@ -113,6 +113,7 @@ pub struct PythonWorker {
     pub process: tokio::process::Child,
     pub stdin: tokio::process::ChildStdin,
     pub stdout: BufReader<tokio::process::ChildStdout>,
+    _process_tree_guard: crate::process_control::ProcessTreeGuard,
 }
 
 impl PythonWorker {
@@ -129,6 +130,7 @@ impl PythonWorker {
             .current_dir(worker_dir)
             .env("PYTHONPATH", worker_dir)
             .env("PYTHONUNBUFFERED", "1")
+            .env_remove("PULSAR_COOKIES_FROM_BROWSER")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
@@ -137,6 +139,17 @@ impl PythonWorker {
         let mut child = command
             .spawn()
             .map_err(|error| PythonRunnerError::ProcessSpawnError(error.to_string()))?;
+        let process_tree_guard =
+            match crate::process_control::ProcessTreeGuard::attach_to_tokio_child(&child) {
+                Ok(guard) => guard,
+                Err(error) => {
+                    let _ = child.start_kill();
+                    let _ = child.wait().await;
+                    return Err(PythonRunnerError::ProcessSpawnError(format!(
+                        "Could not establish a cancellable worker process tree: {error}"
+                    )));
+                }
+            };
 
         let stdin = child.stdin.take().ok_or_else(|| {
             PythonRunnerError::IOError("Python worker did not expose stdin".to_string())
@@ -168,6 +181,7 @@ impl PythonWorker {
             process: child,
             stdin,
             stdout: BufReader::new(stdout),
+            _process_tree_guard: process_tree_guard,
         })
     }
 
