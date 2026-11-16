@@ -6,46 +6,60 @@ actual, las pruebas reproducidas y esta definición de verdad.
 
 ## Gate P1-04 — seguridad Tauri, CSP y recursos locales — 2026-11-01
 
-### Candidato actual — código `52b59865` — 2026-11-15
+### Candidato actual — código `e38731ee` — 2026-11-16
 
-El candidato publicado en `codex/pulsaria-beta4-prep` es el SHA exacto
-`52b598659b0655e54c30b40196d9194a3052e4be`. La CI canonical terminó PASS en
-[run 43734555115](https://github.com/danielunibe/Pulsaria/actions/runs/43734555115);
+El candidato de código publicado en `codex/pulsaria-beta4-prep` es el SHA exacto
+`e38731eef28551c55c86aae84560d87c27952be9`. La CI canonical terminó PASS en
+[run 43747260931](https://github.com/danielunibe/Pulsaria/actions/runs/43747260931);
 el runtime PR terminó PASS en
-[run 43734555116](https://github.com/danielunibe/Pulsaria/actions/runs/43734555116),
-incluido el smoke instalado aislado. El dispatch manual con retención
+[run 43747260920](https://github.com/danielunibe/Pulsaria/actions/runs/43747260920).
+El dispatch manual con retención
+[43751089553](https://github.com/danielunibe/Pulsaria/actions/runs/43751089553)
+terminó PASS sobre el mismo SHA e hizo smoke NSIS instalado en runner aislado.
+
+Artifact exacto `pulsaria-p1-04-acceptance-43751089553-1` (ID `14177740443`,
+586,813,528 bytes; digest ZIP
+`sha256:778185be93e1173aed9c54f0cea1a000246a9a3cba5c40c1b842321ae7df3739`,
+expira `2026-12-15T19:36:27Z`). El NSIS incluido tiene SHA-256
+`D16F658EB6AD5B7E5BD93ED6008355826FC8E589BFFBA3B9725807C0C75E84D0` según la
+evidencia del artifact exacto. No se instaló ni lanzó en el equipo del usuario.
+
+El HEAD documental verificado antes de esta actualización era
+`ce750206785c43a61eed1455b015918648496a3b`; los cambios posteriores al código
+`e38731e` solo modificaban documentos. La CI canonical exacta de ese HEAD terminó
+PASS en [run 43830642023](https://github.com/danielunibe/Pulsaria/actions/runs/43830642023).
+El preflight runtime
+[43830642088](https://github.com/danielunibe/Pulsaria/actions/runs/43830642088)
+terminó SUCCESS por alcance documental; preparación de runtime, build/smoke NSIS
+y retención quedaron SKIPPED, sin instalador nuevo.
+
+El límite de entrada cruda y serializada de URL, los controles de orígenes y las
+regresiones automatizadas de P1-04 pertenecen al código candidato. El artifact
+no sustituye aceptación humana en Windows limpio, prueba de volumen físico,
+revisión de UI/accesibilidad ni TikTok live autorizado. P1-04 sigue
+**PARTIAL / DOING**; QA-05 sigue **DOING / sin aceptación live**.
+
+La auditoría documental de Ajustes en
+[`docs/CORE03_SETTINGS_AUDIT.md`](docs/CORE03_SETTINGS_AUDIT.md) no reprodujo un
+nuevo P0 y no cierra CORE-03. Siguiente acción: aceptación humana del artifact
+exacto en Windows limpio y completar los criterios live autorizados de QA-05 en
+entorno aislado.
+
+### Candidato anterior — código `52b59865` — superseded — 2026-11-15
+
+El SHA exacto fue `52b598659b0655e54c30b40196d9194a3052e4be`. La CI canonical
+[43734555115](https://github.com/danielunibe/Pulsaria/actions/runs/43734555115),
+el runtime PR [43734555116](https://github.com/danielunibe/Pulsaria/actions/runs/43734555116)
+y el dispatch retenido
 [43736026192](https://github.com/danielunibe/Pulsaria/actions/runs/43736026192)
-terminó PASS sobre el mismo SHA. El instalador NSIS x64
-`Pulsaria_0.1.0-beta.4_x64-setup.exe` reportó SHA-256
-`812254512BB9B51926B58CAE32B3837819DFB0C3FFC1353AC8D2C2C88F1CC2D6`.
-El smoke instaló el paquete en runner TEMP con APPDATA/WebView2 aislados y
-completó health/API, reinicio y cleanup. Artifact
+terminaron PASS sobre ese SHA. El artifact
 `pulsaria-p1-04-acceptance-43736026192-1` (ID `14172355088`, 586,930,409 bytes,
 digest `sha256:81bc335aed981782b197f742155bf8dce8b954a1f2c027ea87431c1716f02f23`,
-expira `2026-12-15T17:10:17Z`) contiene el instalador exacto y su manifiesto de
-retención. Actions no separa el tamaño individual del `.exe`.
+expira `2026-12-15T17:10:17Z`) y el instalador NSIS
+`812254512BB9B51926B58CAE32B3837819DFB0C3FFC1353AC8D2C2C88F1CC2D6` pertenecen
+solo a ese candidato anterior; no usarlos para aceptar el código actual.
 
-El cambio focal mantiene el límite de entrada cruda de 2,048 bytes y añade el
-mismo límite al URL nativo ya serializado por `url::Url`. La regresión sintética
-de una query con 180 emoji midió 764 bytes de entrada y 2,204 bytes serializados;
-el opener la aceptaba antes del fix y ahora la rechaza. Los tests de
-`external_links` sobre el archivo productivo pasaron 3/3 en crate aislado; la
-suite frontend de seguridad pasó 12/12; `cargo fmt --check` y
-`git diff --check` pasaron. La prueba completa de Cargo no pudo compilarse
-localmente porque `ort-sys` requiere `DirectML.dll`, ausente del entorno. CI
-canonical verificó los contratos Rust en este SHA, y el build NSIS exacto pasó
-en ambos workflows runtime. No se ejecutó `npm run verify:mvp` porque incluye
-pruebas con modelos locales no autorizadas para esta tarea. No se instaló ni
-lanzó la app en el equipo local.
-
-P1-04 sigue **PARTIAL / DOING**; QA-05 sigue **DOING / sin aceptación live**.
-El resultado automatizado no sustituye aceptación humana en Windows limpio,
-revisión de accesibilidad/UI, prueba de volumen físico, navegador externo
-visible ni TikTok live autorizado.
-
-Rollback focal: `git revert 52b59865`. Siguiente acción: aceptación humana del
-artifact exacto en Windows limpio y completar los criterios live autorizados de
-QA-05 en entorno aislado.
+Rollback focal de ese cambio: `git revert 52b59865`.
 
 ### Candidato anterior — código `5b0b12b8` — histórico — 2026-11-15
 
