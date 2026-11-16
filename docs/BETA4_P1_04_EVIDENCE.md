@@ -1,10 +1,35 @@
 # Pulsaria Beta 4 — evidencia de Gate P1-04
 
-Fecha de corte: 2026-11-15
+Fecha de corte: 2026-11-16
 Estado: **PARTIAL — permanece en DOING**
 PR: [#3, borrador y abierto](https://github.com/danielunibe/PulsarIA/pull/3)
 
-## Candidato actual — código `52b59865` — 2026-11-15
+## Candidato actual — código `e38731ee` — 2026-11-15
+
+El HEAD exacto de `codex/pulsaria-beta4-prep` es
+`e38731eef28551c55c86aae84560d87c27952be9`. La CI canonical terminó PASS en
+[run 43747260931](https://github.com/danielunibe/Pulsaria/actions/runs/43747260931)
+y el runtime PR terminó PASS en
+[run 43747260920](https://github.com/danielunibe/Pulsaria/actions/runs/43747260920).
+El dispatch manual de aceptación
+[43751089553](https://github.com/danielunibe/Pulsaria/actions/runs/43751089553)
+también terminó PASS sobre ese SHA; su smoke NSIS instalado usó un runner
+aislado y completó el preflight, reinicio y limpieza.
+
+El artifact retenido es
+`pulsaria-p1-04-acceptance-43751089553-1` (ID `14177740443`,
+`586,813,528` bytes, digest
+`sha256:778185be93e1173aed9c54f0cea1a000246a9a3cba5c40c1b842321ae7df3739`).
+El run público identifica el artifact exacto, pero no publica el SHA-256 del
+`.exe` por separado; calcularlo desde el ejecutable extraído durante la
+aceptación humana. No reutilizar el hash del candidato anterior.
+
+Este smoke automatizado no sustituye la aceptación visual en Windows limpio,
+la prueba con una unidad física, el recorrido live de TikTok autorizado ni la
+revisión humana de teclado y lector de pantalla. No se instaló ni inició la app
+en este equipo. P1-04 permanece **PARTIAL / DOING** y QA-05 **DOING**.
+
+## Candidato anterior — código `52b59865` — superseded — 2026-11-15
 
 El SHA exacto publicado en `codex/pulsaria-beta4-prep` es
 `52b598659b0655e54c30b40196d9194a3052e4be`. La CI canonical terminó PASS en
