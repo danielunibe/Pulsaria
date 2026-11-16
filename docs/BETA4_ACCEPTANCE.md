@@ -26,7 +26,7 @@ Registrar en la evidencia privada de aceptación:
 | Dato | Valor |
 | --- | --- |
 | Archivo `.exe` y tamaño | `Pulsaria_0.1.0-beta.4_x64-setup.exe`; artifact de Actions `pulsaria-p1-04-acceptance-43751089553-1`, `586,813,528` bytes según `size_in_bytes` (ID `14177740443`; tamaño total del artifact, no del `.exe`) |
-| SHA-256 del `.exe` | No aparece en el resumen ni metadatos públicos consultados. Calcular desde el ejecutable extraído durante la aceptación humana o comprobar los logs con acceso autenticado; no reutilizar un hash superseded. |
+| SHA-256 del `.exe` | `D16F658EB6AD5B7E5BD93ED6008355826FC8E589BFFBA3B9725807C0C75E84D0` (registrado para este artifact exacto en las evidencias de P1-04 y QA-05) |
 | Tag / source commit del artefacto | Sin tag / `e38731eef28551c55c86aae84560d87c27952be9` |
 | CI canonical / runtime y artifact | [canonical 43747260931 PASS](https://github.com/danielunibe/Pulsaria/actions/runs/43747260931); [runtime PR 43747260920 PASS](https://github.com/danielunibe/Pulsaria/actions/runs/43747260920); dispatch exacto [43751089553 PASS](https://github.com/danielunibe/Pulsaria/actions/runs/43751089553), incluido smoke NSIS instalado aislado |
 | Digest del ZIP / expiración | `sha256:778185be93e1173aed9c54f0cea1a000246a9a3cba5c40c1b842321ae7df3739`; artifact retenido hasta `2026-12-15T19:36:27Z` |
@@ -35,8 +35,8 @@ Registrar en la evidencia privada de aceptación:
 
 El artifact retenido del run [43751089553](https://github.com/danielunibe/Pulsaria/actions/runs/43751089553)
 corresponde al código del commit exacto registrado arriba. La rama contiene
-después el commit documental `2139d4fcca8696b938075a5695e4ca218c63d9bb`,
-que no cambia el binario ni requiere reconstruirlo. La aceptación humana queda
+commits documentales posteriores que actualizan esta hoja y no modifican el
+binario ni requieren reconstruirlo. La aceptación humana queda
 pendiente y debe aplicarse únicamente a ese artifact/digest. Cualquier
 reconstrucción o cambio de archivo invalida la aceptación. El artifact anterior de
 `5b0b12b8adc05745f1b606efeb1f88eade6ba97a` quedó superseded; no debe usarse
