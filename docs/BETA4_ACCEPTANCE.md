@@ -47,6 +47,30 @@ en el run 43710866209, quedó superseded por el candidato actual. El más antigu
 `3295202cff999ae666818d94ac49280a682d8d66`, validado en el run 43701997112,
 también es histórico y no debe usarse para aceptar el candidato actual.
 
+## Verificación local del artifact y disponibilidad del entorno — 2026-11-16
+
+Se descargó el ZIP original del run [43751089553](https://github.com/danielunibe/Pulsaria/actions/runs/43751089553)
+sin reconstruirlo. La metadata del artifact (ID `14177740443`, nombre
+`pulsaria-p1-04-acceptance-43751089553-1`, commit
+`e38731eef28551c55c86aae84560d87c27952be9`, tamaño `586,813,528` bytes) y el
+digest publicado y calculado localmente coinciden:
+`sha256:778185be93e1173aed9c54f0cea1a000246a9a3cba5c40c1b842321ae7df3739`.
+El manifiesto incluido identifica el mismo run, intento 1 y versión
+`0.1.0-beta.4`; el SHA-256 calculado del instalador coincide con el manifiesto:
+`D16F658EB6AD5B7E5BD93ED6008355826FC8E589BFFBA3B9725807C0C75E84D0`.
+
+El instalador y el ejecutable embebido reportan `NotSigned` en Authenticode.
+El stub Unicode NSIS es PE32 (`0x014c`) y el payload `pulsaria.exe` es PE x64
+(`0x8664`). Esto identifica el payload x64; no acredita instalación en Windows.
+
+El único host disponible fue Windows 11 Pro x64, build `26300`, un equipo de
+desarrollo, no limpio. Windows Sandbox no está instalado y no hubo una VM
+Windows accesible en la sesión. No se instaló ni inició el artifact. Por ello
+siguen pendientes la matriz de aceptación instalada y la confirmación explícita
+requerida inmediatamente antes de instalar o ejecutar NSIS en un entorno
+aislado. La aceptación humana debe aplicarse únicamente al hash exacto de la
+tabla anterior.
+
 ## Entorno de prueba y privacidad
 
 - Usar una VM, Windows Sandbox o equipo de prueba x64 sin Node.js, Rust, Python,

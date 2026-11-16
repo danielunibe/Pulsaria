@@ -33,6 +33,33 @@ la prueba con una unidad física, el recorrido live de TikTok autorizado ni la
 revisión humana de teclado y lector de pantalla. No se instaló ni inició la app
 en este equipo. P1-04 permanece **PARTIAL / DOING** y QA-05 **DOING**.
 
+### Verificación local del artifact exacto — 2026-11-16
+
+Se descargó el ZIP original desde el enlace visible del run autenticado de
+GitHub Actions; no se reconstruyó el instalador. El nombre, ID `14177740443`,
+run `43751089553`, SHA de código
+`e38731eef28551c55c86aae84560d87c27952be9`, tamaño `586,813,528` bytes y
+digest publicado `sha256:778185be93e1173aed9c54f0cea1a000246a9a3cba5c40c1b842321ae7df3739`
+coinciden con la metadata del artifact. El SHA-256 calculado del ZIP local
+coincide exactamente con ese digest.
+
+El ZIP contiene solo el instalador
+`Pulsaria_0.1.0-beta.4_x64-setup.exe` y
+`P1-04-acceptance-manifest.json`. El manifiesto vincula el instalador al mismo
+run, intento 1, commit y versión `0.1.0-beta.4`. El SHA-256 calculado del NSIS
+es `D16F658EB6AD5B7E5BD93ED6008355826FC8E589BFFBA3B9725807C0C75E84D0`, igual
+al del manifiesto. Authenticode reporta `NotSigned` para el instalador y para
+el payload. El stub Unicode de NSIS es PE32 (`0x014c`); el `pulsaria.exe`
+embebido es PE x64 (`0x8664`), por lo que la arquitectura del producto coincide
+con el objetivo Windows x64. Esto verifica el contenido y arquitectura del
+paquete, no una instalación local.
+
+El host disponible es Windows 11 Pro x64, build `26300`, usado para desarrollo;
+no es un entorno limpio. Windows Sandbox no está instalado y no hubo una VM
+Windows accesible en la sesión. No se instaló ni abrió el NSIS. P1-04 conserva
+pendiente la aceptación instalada/humana en un entorno aislado, incluida la
+confirmación explícita inmediatamente antes de instalar o ejecutar el artifact.
+
 ## Candidato anterior — código `52b59865` — superseded — 2026-11-15
 
 El SHA exacto publicado en `codex/pulsaria-beta4-prep` es

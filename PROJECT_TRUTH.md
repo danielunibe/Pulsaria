@@ -22,16 +22,23 @@ Artifact exacto `pulsaria-p1-04-acceptance-43751089553-1` (ID `14177740443`,
 `sha256:778185be93e1173aed9c54f0cea1a000246a9a3cba5c40c1b842321ae7df3739`,
 expira `2026-12-15T19:36:27Z`). El NSIS incluido tiene SHA-256
 `D16F658EB6AD5B7E5BD93ED6008355826FC8E589BFFBA3B9725807C0C75E84D0` según la
-evidencia del artifact exacto. No se instaló ni lanzó en el equipo del usuario.
+evidencia del artifact exacto. El 2026-11-16 se descargó el ZIP original y se
+recalcularon ambos hashes; el manifiesto coincide en run, intento, commit y
+versión. Authenticode indica `NotSigned`; el stub NSIS es PE32 y el payload
+`pulsaria.exe` es PE x64 (`0x8664`). No se instaló ni lanzó en el equipo del
+usuario.
 
-El HEAD documental verificado antes de esta actualización era
-`ce750206785c43a61eed1455b015918648496a3b`; los cambios posteriores al código
-`e38731e` solo modificaban documentos. La CI canonical exacta de ese HEAD terminó
-PASS en [run 43830642023](https://github.com/danielunibe/Pulsaria/actions/runs/43830642023).
+El HEAD documental del baseline fue
+`feaf79ed5b90aa03b40429839994732f550031fb`; los cambios posteriores al código
+`e38731e` solo modificaban documentos. La CI canonical de ese HEAD terminó PASS
+en [run 43833541294](https://github.com/danielunibe/Pulsaria/actions/runs/43833541294).
 El preflight runtime
-[43830642088](https://github.com/danielunibe/Pulsaria/actions/runs/43830642088)
+[43833541291](https://github.com/danielunibe/Pulsaria/actions/runs/43833541291)
 terminó SUCCESS por alcance documental; preparación de runtime, build/smoke NSIS
-y retención quedaron SKIPPED, sin instalador nuevo.
+y retención quedaron SKIPPED, sin instalador nuevo. La verificación local
+confirma la integridad descargada, pero el host de desarrollo Windows 11 Pro
+x64 build `26300` no es limpio; Windows Sandbox no está instalado y no hubo VM
+accesible. La instalación y aceptación humana siguen pendientes.
 
 El límite de entrada cruda y serializada de URL, los controles de orígenes y las
 regresiones automatizadas de P1-04 pertenecen al código candidato. El artifact
