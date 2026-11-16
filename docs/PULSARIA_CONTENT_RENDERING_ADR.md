@@ -80,6 +80,7 @@ The table name and schema below are a proposal, not existing code. The exact DDL
 | Field | Proposed meaning / constraint |
 |---|---|
 | `id` | Local primary key. |
+| `projection_schema_version` | Required version of the persisted projection contract; readers reject unknown versions and fall back to the existing reader. |
 | `article_version_id` | Required FK to `magazine_article_versions.id`; this is the source revision and pins the projection to an immutable article version. |
 | `projection_kind` | `markdown` or `diagram`. |
 | `content_text` | Markdown source or Mermaid source code; never generated SVG. |
